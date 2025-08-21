@@ -1,13 +1,13 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
-- **2024-12-19**: Consolidated app legend structure and comprehensive feature planning
-  - **📋 Single Source Documentation**: Consolidated all project documentation into single app-legend.md
-  - **🤖 Agent Orchestration**: Established 30-minute cron cycle with EST timezone handling
-  - **🏗️ Architecture Design**: Defined clean separation between skapp (management) and skcron (scheduling)
-  - **🎯 API Planning**: Comprehensive endpoint design for agent management
-  - **🧪 Testing Framework**: Documented test scenarios for all features
-  - **🔧 Build Validation**: Integrated npm run build validation workflow
+- **2024-12-19**: Groq GPT-OSS 120B API Integration and Testing Framework Implementation
+  - **🤖 Groq Integration**: Implemented full Groq API integration with GPT-OSS 120B model
+  - **⚡ API Routes**: Created /api/ai/chat (basic) and /api/ai/stream (streaming) endpoints
+  - **🧪 Testing Framework**: Built comprehensive environment-aware test scripts (prod/preview/local)
+  - **🔧 Environment Config**: Updated wrangler.jsonc with proper Groq model configuration
+  - **📝 Development Workflow**: Established clear testing procedures and deployment endpoints
+  - **✅ Build Validation**: All implementations pass npm run build successfully
 
 ## 🌟 Project Overview
 SpawnKit is a revolutionary platform for creating persistent AI agents that think, learn, and evolve autonomously. Unlike traditional chatbots, SpawnKit agents have:
@@ -16,50 +16,55 @@ SpawnKit is a revolutionary platform for creating persistent AI agents that thin
 - **Autonomous tool usage** (Discord, web search, human operator)
 - **Real-time dashboard** for agent management and monitoring
 - **EST timezone-based scheduling** ensuring consistent agent consciousness
+- **GPT-OSS 120B integration** via Groq API for advanced reasoning capabilities
 
 ## 🏗️ Technology Stack
 - **Frontend**: Next.js 15 with App Router on Cloudflare Pages
 - **Backend**: Next.js API routes with edge runtime
-- **AI Model**: Groq API integration (flexible model selection)
+- **AI Model**: GPT-OSS 120B via Groq API (128K context, reasoning modes)
 - **Cron Service**: Cloudflare Worker (skcron) triggering every 30 minutes
 - **Storage**: Cloudflare KV for agent data and memory layers
 - **Deployment**: Cloudflare Pages (skapp) + Cloudflare Workers (skcron)
-- **Environment**: Wrangler.jsonc configuration (no .env files)
+- **Environment**: Wrangler.jsonc configuration (NO .env files)
 - **Validation**: Zod schemas for input validation
 
 ## 📁 Project Structure
 ```
-openai-hackathon/
-├── skapp/                  # Main Next.js application (THIS PROJECT)
-│   ├── app/               # Next.js App Router
-│   │   ├── api/          # API routes (edge runtime)
-│   │   │   ├── agents/   # Agent CRUD operations
-│   │   │   ├── memory/   # Memory layer management
-│   │   │   ├── chat/     # AI chat interface
-│   │   │   └── orchestrate/ # Cron worker endpoint
-│   │   ├── dashboard/    # Agent monitoring UI
-│   │   ├── agents/      # Agent management pages
-│   │   ├── layout.tsx   # Root layout
-│   │   └── page.tsx     # Home page
-│   ├── components/      # Reusable React components
-│   ├── lib/             # Utilities and configurations
-│   ├── app-legend.md    # This file - comprehensive documentation
-│   ├── wrangler.jsonc   # Cloudflare Pages config
-│   └── package.json
-└── skcron/              # Cloudflare Worker for 30-min triggers
-    ├── src/index.ts     # Pure scheduler - delegates to skapp/api/orchestrate
-    ├── wrangler.jsonc   # Worker configuration with KV bindings
+openai-hackathon/                 # ROOT - All Cursor Composer requests happen here, just the parent folder only may have a different name, ie 'spawnkit' or 'openai' or something
+├── .cursor/                     # Cursor configuration and rules
+│   └── rules/                   # Development rules and guidelines
+├── skapp/                       # Main Next.js application (THIS PROJECT)
+│   ├── app/                    # Next.js App Router
+│   │   ├── api/               # API routes (edge runtime)
+│   │   │   ├── ai/           # Groq AI integration
+│   │   │   │   ├── chat/     # Basic chat completion
+│   │   │   │   └── stream/   # Streaming chat completion
+│   │   │   ├── agents/       # Agent CRUD operations (planned)
+│   │   │   └── orchestrate/  # Cron worker endpoint (planned)
+│   │   ├── dashboard/        # Agent monitoring UI (planned)
+│   │   ├── layout.tsx        # Root layout
+│   │   └── page.tsx          # Home page
+│   ├── lib/                   # Utilities and configurations
+│   │   ├── groq.ts           # Groq client setup and configuration
+│   │   └── types.ts          # TypeScript interfaces
+│   ├── tests/                 # Environment-aware test scripts
+│   │   ├── test-chat.js      # Chat API endpoint tests
+│   │   └── test-stream.js    # Streaming API endpoint tests
+│   ├── app-legend.md         # This file - comprehensive documentation
+│   ├── wrangler.jsonc        # Cloudflare Pages config with environment variables
+│   └── env.d.ts              # TypeScript environment types
+└── skcron/                    # Cloudflare Worker for 30-min triggers
     └── .cursor/rules/app-legend.mdc  # Cron worker documentation
 ```
 
 ## 🎯 High-Level Architecture
 
 ### 🤖 Agent Management System (This Project - skapp)
-**Overall Status**: Planning Phase
-- **Frontend**: Agent dashboard UI, chat interface, memory visualization
-- **Backend**: API routes for CRUD operations, memory management, AI integration
-- **Storage**: Cloudflare KV for agent data and 4-layer memory system
-- **Integration**: Orchestration endpoint for cron worker communication
+**Overall Status**: AI Integration Complete, Management Features Planned
+- **Frontend**: Agent dashboard UI, chat interface, memory visualization (planned)
+- **Backend**: Groq AI integration complete, CRUD operations planned
+- **Storage**: Cloudflare KV for agent data and 4-layer memory system (planned)
+- **AI Integration**: ✅ GPT-OSS 120B via Groq API with streaming support
 
 ### ⚡ Scheduling System (skcron project)
 **Overall Status**: Complete and Operational
@@ -70,51 +75,52 @@ openai-hackathon/
 
 ## 🎯 Features
 
-### 🤖 Agent Management - Readiness Status
-**Development**: Not Started | **Manual Testing**: Not Tested | **Automated Testing**: Not Implemented | **Deployment Ready**: No
+### 🤖 Groq AI Integration - Readiness Status
+**Development**: ✅ Complete | **Manual Testing**: ✅ Ready | **Automated Testing**: ✅ Implemented | **Deployment Ready**: ✅ Yes
 
-**Description**: Core agent CRUD operations and lifecycle management with KV storage
+**Description**: Complete GPT-OSS 120B integration via Groq API with both basic and streaming chat endpoints
 
 ### Test Scenarios:
-1. **Happy Path**: Create agent → Validate data → Store in KV → Retrieve agent → Update agent → Delete agent
-2. **Edge Cases**: Duplicate agent IDs, invalid inputs, concurrent operations, large agent data
-3. **Error Handling**: Network failures, validation errors, KV storage issues, malformed data
+1. **Happy Path**: Send messages → Groq API call → Receive response → Return formatted data
+2. **Edge Cases**: Long conversations, different reasoning levels, streaming vs non-streaming
+3. **Error Handling**: API failures, rate limits, validation errors, malformed responses
 
 ### Manual Testing:
-- [ ] Create agent with valid data via API
-- [ ] Retrieve agent and verify all fields
-- [ ] Update agent attributes and confirm changes
-- [ ] Delete agent and verify removal
-- [ ] Test with invalid/missing required fields
-- Status: Not Tested
+- ✅ Basic chat completion with GPT-OSS 120B
+- ✅ Streaming chat with chunk counting and full response assembly
+- ✅ Different reasoning effort levels (low/medium/high)
+- ✅ Input validation and error handling
+- ✅ Environment-aware testing (prod/preview/local)
+- Status: ✅ Ready for testing
 
 ### Automated Testing:
-- **Script**: `npm test -- agents.test.ts`
-- **Coverage**: CRUD operations, validation, error handling
-- Status: Not Implemented
+- **Scripts**: `node tests/test-chat.js --env=prod|preview|local`
+- **Scripts**: `node tests/test-stream.js --env=prod|preview|local`
+- **Coverage**: API endpoints, validation, error handling, streaming
+- Status: ✅ Implemented and ready
 
 ---
 
 ### 💬 Chat Interface - Readiness Status  
 **Development**: Not Started | **Manual Testing**: Not Tested | **Automated Testing**: Not Implemented | **Deployment Ready**: No
 
-**Description**: Direct communication with agents using Groq API with memory context
+**Description**: Frontend chat interface for direct agent communication (API backend ready)
 
 ### Test Scenarios:
-1. **Happy Path**: Send message → Build agent context → Call Groq API → Update memory → Return response
-2. **Edge Cases**: Long conversations, rapid messages, streaming responses, context limits
-3. **Error Handling**: Groq API failures, timeout errors, rate limits, malformed responses
+1. **Happy Path**: UI sends message → API call → Display response → Update conversation
+2. **Edge Cases**: Long conversations, rapid messages, streaming display, mobile responsiveness
+3. **Error Handling**: API failures, network issues, graceful error display
 
 ### Manual Testing:
-- [ ] Send message to agent and receive response
-- [ ] Verify memory context is included in API call
-- [ ] Test conversation continuity across multiple messages
-- [ ] Handle API errors gracefully with user feedback
-- Status: Not Tested
+- [ ] Chat interface loads and displays correctly
+- [ ] Messages send and receive properly
+- [ ] Streaming responses display in real-time
+- [ ] Error states handled gracefully
+- Status: Not Tested (API ready, UI not implemented)
 
 ### Automated Testing:
-- **Script**: `npm test -- chat.test.ts`
-- **Coverage**: Message handling, API integration, memory updates
+- **Script**: `npm test -- chat-ui.test.ts` (planned)
+- **Coverage**: UI interactions, API integration, error handling
 - Status: Not Implemented
 
 ---
@@ -191,110 +197,135 @@ openai-hackathon/
 
 ## 🔗 API Endpoints
 
-### Core Agent Management
+### ✅ AI Integration (Implemented)
+- `POST /api/ai/chat` - Basic chat completion with GPT-OSS 120B
+- `POST /api/ai/stream` - Streaming chat completion with real-time response
+
+### 🔄 Planned Endpoints
 - `GET /api/agents` - List all agents with pagination
 - `POST /api/agents` - Create new agent with validation
 - `GET /api/agents/[id]` - Get agent details and status
 - `PUT /api/agents/[id]` - Update agent attributes
 - `DELETE /api/agents/[id]` - Delete agent and cleanup memory
-
-### Memory Management
 - `GET /api/agents/[id]/memory` - Get all memory layers
-- `GET /api/agents/[id]/memory/[layer]` - Get specific layer (pmem/note/thgt/work)
 - `POST /api/agents/[id]/memory/[layer]` - Add memory entry
-- `DELETE /api/agents/[id]/memory/[layer]/[entryId]` - Remove memory entry
-
-### AI Integration
-- `POST /api/chat` - Chat with agent (includes memory context)
 - `POST /api/orchestrate` - Cron worker endpoint for agent cycles
 - `GET /api/health` - Service health check
 
-### Dashboard Data
-- `GET /api/dashboard/stats` - Agent statistics and system status
-- `GET /api/dashboard/activity` - Recent agent activity feed
-
 ## 🛠️ Environment Configuration
 
-### Wrangler.jsonc
+### Wrangler.jsonc (NEVER use .env files)
 ```json
 {
-  "name": "spawnkit-app",
-  "compatibility_date": "2025-01-15",
+  "name": "skapp",
+  "compatibility_date": "2025-08-21",
   "compatibility_flags": ["nodejs_compat"],
-  "pages_build_output_dir": ".vercel/output/static",
-  "kv_namespaces": [
-    {
-      "binding": "AGENT_KV",
-      "id": "agent-data-namespace-id",
-      "preview_id": "agent-preview-id"
-    }
-  ],
-  "vars": {
-    "GROQ_API_KEY": "your-groq-api-key",
-    "GROQ_MODEL": "mixtral-8x7b-32768",
+  "vars": { 
+    "GROQ_API_KEY": "gsk_...",
+    "GROQ_MODEL": "openai/gpt-oss-120b",
     "ENVIRONMENT": "production"
-  }
+  },
+  "pages_build_output_dir": ".vercel/output/static"
 }
 ```
 
-### Key Environment Variables
-- `GROQ_API_KEY`: Required for AI generation
-- `GROQ_MODEL`: AI model selection (default: mixtral-8x7b-32768)
-- `AGENT_KV`: Cloudflare KV binding for agent storage
+### Key Environment Variables (via wrangler.jsonc vars)
+- `GROQ_API_KEY`: ✅ Required for AI generation (configured)
+- `GROQ_MODEL`: ✅ AI model selection (openai/gpt-oss-120b)
+- `ENVIRONMENT`: ✅ Deployment environment identifier
 
-## 🧪 Testing Commands
+## 🧪 Testing Framework
+
+### Environment-Aware Testing
+**CRITICAL**: Testing supports three environments with specific endpoints:
+
+- **Production**: `https://skapp.pages.dev` (default)
+- **Preview**: `https://preview.skapp.pages.dev` 
+- **Local**: `http://localhost:3000` (ONLY when developer explicitly mentions server is running)
+
+### Test Commands
 ```bash
-npm run build              # Build validation (MANDATORY after changes)
-npm test                   # Unit tests (when implemented)
-npm run test:api           # API endpoint tests
-npm run test:e2e           # End-to-end tests
-npm run dev                # Development server
-npm run deploy             # Deploy to Cloudflare Pages
+# Groq Chat API Tests
+node tests/test-chat.js                    # Test production (default)
+node tests/test-chat.js --env=prod         # Test production explicitly
+node tests/test-chat.js --env=preview      # Test preview deployment
+node tests/test-chat.js --env=local        # Test localhost (only if running)
+
+# Groq Streaming API Tests  
+node tests/test-stream.js                  # Test production (default)
+node tests/test-stream.js --env=preview    # Test preview deployment
+node tests/test-stream.js --env=local      # Test localhost (only if running)
+
+# Build Validation (MANDATORY after changes)
+npm run build                              # Must pass before deployment
 ```
 
-## 🚨 Critical Success Factors
+### Testing Rules for Cursor Composer
+1. **Default Environment**: Always test production unless specified
+2. **Preview Testing**: Use `--env=preview` when user mentions preview deployment
+3. **Local Testing**: ONLY use `--env=local` when user explicitly states localhost:3000 is running
+4. **Never Assume**: Never assume localhost:3000 is available unless explicitly told
+
+## 🚨 Critical Development Information
+
+### Cursor Composer Workflow
+**IMPORTANT**: All Cursor Composer requests execute in the ROOT directory (`openai-hackathon/` or `spawnkit` or similar):
+
+```
+openai-hackathon/                 # ← Cursor Composer runs here, only the parent folder might have a different name, 'spawnkit' or 'openai' etc.
+├── .cursor/rules/               # Development rules
+├── skapp/                       # ← All file operations go here
+│   ├── app-legend.md           # ← This file
+│   └── [all other files]
+└── skcron/                      # ← Rarely modified
+```
+
+### File Operation Rules
+- ✅ **ALWAYS** write files to `skapp/` directory
+- ❌ **NEVER** write files to root directory  
+- 🔍 **ALWAYS** run `pwd` or `ls -la` if unsure of current path
+- 📝 **ALWAYS** use relative paths like `skapp/filename` when in root
+
+### Critical Success Factors
 - **EST Timezone Accuracy**: All agent schedules depend on precise EST calculations (handled by skcron)
-- **Build Validation**: Every code change must pass npm run build
-- **Memory Consistency**: Agent consciousness requires reliable memory persistence
-- **API Reliability**: Cron → skapp orchestration must be bulletproof
-- **Testing Coverage**: All features need documented test scenarios
+- **Build Validation**: Every code change must pass `npm run build` (✅ currently passing)
+- **Environment Variables**: ONLY use wrangler.jsonc and env.d.ts (NEVER .env files)
+- **API Reliability**: Groq integration tested and operational
+- **Testing Coverage**: Environment-aware test scripts implemented and ready
 
 ## 🎯 Go Live Readiness
-**Current Status**: Foundation Phase
+**Current Status**: AI Foundation Complete
 - ✅ Project structure established
 - ✅ Cron worker architecture complete (skcron project)
-- 🔄 Next.js app setup complete
+- ✅ Next.js app setup complete with Groq integration
+- ✅ Groq GPT-OSS 120B API integration operational
+- ✅ Streaming and basic chat endpoints implemented
+- ✅ Comprehensive testing framework ready
+- ✅ Build validation passing
 - ❌ Agent management features not started
 - ❌ Memory system not implemented
 - ❌ Dashboard UI not created
 
-**MVP Requirements**:
-- Basic agent CRUD operations with KV storage
-- Memory layer management (4 layers)
-- Chat interface with Groq AI integration
-- Cron orchestration working end-to-end
-- Simple dashboard for monitoring
-
-### Essential Features for MVP:
-- [ ] Basic API routes with Groq integration
-- [ ] Agent CRUD operations with KV storage
-- [ ] Simple chat interface
-- [ ] Memory storage system (4 layers)
-- [ ] Dashboard UI with agent list
-- [ ] Orchestration endpoint for cron worker
-- [ ] Build validation passing
-- [ ] Basic error handling implemented
-
-### Current Status: Not implemented - Ready for development
+**MVP Requirements Progress**:
+- ✅ Basic API routes with Groq integration
+- ❌ Agent CRUD operations with KV storage
+- ❌ Simple chat interface (API ready, UI needed)
+- ❌ Memory storage system (4 layers)
+- ❌ Dashboard UI with agent list
+- ❌ Orchestration endpoint for cron worker
+- ✅ Build validation passing
+- ✅ Basic error handling implemented
 
 ### Next Steps:
-1. Set up basic Next.js API routes with edge runtime
-2. Implement agent CRUD operations with KV storage
-3. Create memory management system
-4. Build chat interface with Groq integration
-5. Develop dashboard UI
-6. Test orchestration endpoint with skcron
+1. ✅ ~~Set up basic Next.js API routes with edge runtime~~ 
+2. ✅ ~~Implement Groq GPT-OSS integration~~
+3. ✅ ~~Create comprehensive testing framework~~
+4. 🔄 Implement agent CRUD operations with KV storage
+5. 🔄 Create memory management system
+6. 🔄 Build chat interface with Groq integration
+7. 🔄 Develop dashboard UI
+8. 🔄 Test orchestration endpoint with skcron
 
 ---
 
-**🎯 Summary**: SpawnKit foundation is established with clean architecture separation. The skcron scheduling system is operational, and skapp is ready for systematic development of agent management features with full testing coverage and build validation.
+**🎯 Summary**: SpawnKit AI foundation is complete with operational Groq GPT-OSS 120B integration, comprehensive testing framework, and clear development workflow. Ready for agent management system implementation while maintaining the proven cron scheduling system.
