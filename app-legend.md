@@ -1,49 +1,72 @@
-# SpawnKit App: Agent Management Platform 📱🤖
+# SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
-- **2024-12-19**: Initial skapp setup and comprehensive feature planning
-  - **📋 App Legend Creation**: Detailed feature specifications with testing requirements
-  - **🏗️ Next.js 15 Setup**: App router with Cloudflare Pages configuration
+- **2024-12-19**: Consolidated app legend structure and comprehensive feature planning
+  - **📋 Single Source Documentation**: Consolidated all project documentation into single app-legend.md
+  - **🤖 Agent Orchestration**: Established 30-minute cron cycle with EST timezone handling
+  - **🏗️ Architecture Design**: Defined clean separation between skapp (management) and skcron (scheduling)
   - **🎯 API Planning**: Comprehensive endpoint design for agent management
   - **🧪 Testing Framework**: Documented test scenarios for all features
   - **🔧 Build Validation**: Integrated npm run build validation workflow
 
 ## 🌟 Project Overview
-The SpawnKit App (skapp) is the main Next.js application that provides:
-- **Agent Management**: CRUD operations for persistent AI agents
-- **Memory System**: 4-layer memory management (PMEM/NOTE/THGT/WORK)
-- **Chat Interface**: Direct communication with agents via AI models
-- **Dashboard**: Real-time monitoring and agent status visualization
-- **Orchestration API**: Endpoint for cron worker to trigger agent cycles
+SpawnKit is a revolutionary platform for creating persistent AI agents that think, learn, and evolve autonomously. Unlike traditional chatbots, SpawnKit agents have:
+- **30-minute cognitive cycles** that trigger automatically via Cloudflare Workers
+- **4-layer memory system** (PMEM/NOTE/THGT/WORK) for true persistence
+- **Autonomous tool usage** (Discord, web search, human operator)
+- **Real-time dashboard** for agent management and monitoring
+- **EST timezone-based scheduling** ensuring consistent agent consciousness
 
 ## 🏗️ Technology Stack
-- **Framework**: Next.js 15 with App Router
-- **Runtime**: Cloudflare Pages with edge runtime
-- **Styling**: Tailwind CSS (planned)
-- **AI Integration**: Groq API for agent generation
-- **Storage**: Cloudflare KV for agent data and memory
-- **Environment**: Wrangler.jsonc configuration
+- **Frontend**: Next.js 15 with App Router on Cloudflare Pages
+- **Backend**: Next.js API routes with edge runtime
+- **AI Model**: Groq API integration (flexible model selection)
+- **Cron Service**: Cloudflare Worker (skcron) triggering every 30 minutes
+- **Storage**: Cloudflare KV for agent data and memory layers
+- **Deployment**: Cloudflare Pages (skapp) + Cloudflare Workers (skcron)
+- **Environment**: Wrangler.jsonc configuration (no .env files)
 - **Validation**: Zod schemas for input validation
 
 ## 📁 Project Structure
 ```
-skapp/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes (edge runtime)
-│   │   ├── agents/        # Agent CRUD operations
-│   │   ├── memory/        # Memory layer management
-│   │   ├── chat/          # AI chat interface
-│   │   └── orchestrate/   # Cron worker endpoint
-│   ├── dashboard/         # Agent monitoring UI
-│   ├── agents/           # Agent management pages
-│   ├── layout.tsx        # Root layout
-│   └── page.tsx          # Home page
-├── components/           # Reusable React components
-├── lib/                  # Utilities and configurations
-├── app-legend.md         # This file
-├── wrangler.jsonc        # Cloudflare Pages config
-└── package.json
+openai-hackathon/
+├── skapp/                  # Main Next.js application (THIS PROJECT)
+│   ├── app/               # Next.js App Router
+│   │   ├── api/          # API routes (edge runtime)
+│   │   │   ├── agents/   # Agent CRUD operations
+│   │   │   ├── memory/   # Memory layer management
+│   │   │   ├── chat/     # AI chat interface
+│   │   │   └── orchestrate/ # Cron worker endpoint
+│   │   ├── dashboard/    # Agent monitoring UI
+│   │   ├── agents/      # Agent management pages
+│   │   ├── layout.tsx   # Root layout
+│   │   └── page.tsx     # Home page
+│   ├── components/      # Reusable React components
+│   ├── lib/             # Utilities and configurations
+│   ├── app-legend.md    # This file - comprehensive documentation
+│   ├── wrangler.jsonc   # Cloudflare Pages config
+│   └── package.json
+└── skcron/              # Cloudflare Worker for 30-min triggers
+    ├── src/index.ts     # Pure scheduler - delegates to skapp/api/orchestrate
+    ├── wrangler.jsonc   # Worker configuration with KV bindings
+    └── .cursor/rules/app-legend.mdc  # Cron worker documentation
 ```
+
+## 🎯 High-Level Architecture
+
+### 🤖 Agent Management System (This Project - skapp)
+**Overall Status**: Planning Phase
+- **Frontend**: Agent dashboard UI, chat interface, memory visualization
+- **Backend**: API routes for CRUD operations, memory management, AI integration
+- **Storage**: Cloudflare KV for agent data and 4-layer memory system
+- **Integration**: Orchestration endpoint for cron worker communication
+
+### ⚡ Scheduling System (skcron project)
+**Overall Status**: Complete and Operational
+- **30-min Cycles**: EST timezone-based scheduling implemented
+- **Mode System**: Wakeup (4:30), Awake (5:00-1:50), Sleep (2:00), Deep Sleep (3:00)
+- **API Delegation**: Clean separation - calls skapp/api/orchestrate endpoint
+- **Pure Scheduler**: No agent processing, only timing and delegation
 
 ## 🎯 Features
 
@@ -229,7 +252,28 @@ npm run dev                # Development server
 npm run deploy             # Deploy to Cloudflare Pages
 ```
 
-## 🎯 Go Live Checklist
+## 🚨 Critical Success Factors
+- **EST Timezone Accuracy**: All agent schedules depend on precise EST calculations (handled by skcron)
+- **Build Validation**: Every code change must pass npm run build
+- **Memory Consistency**: Agent consciousness requires reliable memory persistence
+- **API Reliability**: Cron → skapp orchestration must be bulletproof
+- **Testing Coverage**: All features need documented test scenarios
+
+## 🎯 Go Live Readiness
+**Current Status**: Foundation Phase
+- ✅ Project structure established
+- ✅ Cron worker architecture complete (skcron project)
+- 🔄 Next.js app setup complete
+- ❌ Agent management features not started
+- ❌ Memory system not implemented
+- ❌ Dashboard UI not created
+
+**MVP Requirements**:
+- Basic agent CRUD operations with KV storage
+- Memory layer management (4 layers)
+- Chat interface with Groq AI integration
+- Cron orchestration working end-to-end
+- Simple dashboard for monitoring
 
 ### Essential Features for MVP:
 - [ ] Basic API routes with Groq integration
@@ -253,4 +297,4 @@ npm run deploy             # Deploy to Cloudflare Pages
 
 ---
 
-**🎯 Summary**: Comprehensive feature planning complete. Ready for systematic development of agent management platform with full testing coverage and build validation.
+**🎯 Summary**: SpawnKit foundation is established with clean architecture separation. The skcron scheduling system is operational, and skapp is ready for systematic development of agent management features with full testing coverage and build validation.
