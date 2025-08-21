@@ -1,103 +1,147 @@
 import Image from "next/image";
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+export default function Dashboard() {
+  // HARDCODED DATA - Replace with API calls later
+  const systemStats = {
+    activeAgents: 4,
+    notesToday: 23,
+    lastCycle: '2m',
+    toolsExecuted: 8
+  };
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const agents = [
+    {
+      id: 'research_bot',
+      name: 'Agent1',
+      type: 'Research',
+      status: 'awake',
+      lastActivity: '2m ago',
+      statusColor: 'bg-green-500'
+    },
+    {
+      id: 'content_creator',
+      name: 'Agent2', 
+      type: 'Content',
+      status: 'Sleep',
+      lastActivity: '15m ago',
+      statusColor: 'bg-blue-500'
+    },
+    {
+      id: 'discord_bot',
+      name: 'Agent3',
+      type: 'Discord',
+      status: 'Thinking',
+      lastActivity: '30s ago',
+      statusColor: 'bg-yellow-500'
+    }
+  ];
+
+  const recentActivity = [
+    { time: '2m ago', agent: 'Agent1', action: 'used web_search()', detail: 'Researching AI trends' },
+    { time: '15m ago', agent: 'Agent2', action: 'entered sleep mode', detail: 'Processing daily memories' },
+    { time: '18m ago', agent: 'Agent3', action: 'posted to Discord', detail: '#general channel' },
+    { time: '25m ago', agent: 'Agent1', action: 'took note', detail: '"Market trends show 25% growth..."' }
+  ];
+
+  return (
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">🚀 SpawnKit - Persistent AI Agents</h1>
+        <p className="text-gray-600">"Digital workers that think, learn & act"</p>
+      </div>
+
+      {/* System Stats */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <span className="mr-2">📊</span>
+          System Stats
+        </h2>
+        <div className="grid grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">{systemStats.activeAgents}</div>
+            <div className="text-sm text-gray-600">Active Agents</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">{systemStats.notesToday}</div>
+            <div className="text-sm text-gray-600">Notes Today</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">{systemStats.lastCycle}</div>
+            <div className="text-sm text-gray-600">Last Cycle</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-orange-600">{systemStats.toolsExecuted}</div>
+            <div className="text-sm text-gray-600">Tools Executed</div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+
+      {/* Your Agents */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold flex items-center">
+            <span className="mr-2">🤖</span>
+            Your Agents
+          </h2>
+          <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center space-x-2 transition-colors">
+            <span>+</span>
+            <span>New</span>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-4">
+          {agents.map((agent) => (
+            <div key={agent.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center mb-2">
+                <div className={`w-3 h-3 rounded-full ${agent.statusColor} mr-2`}></div>
+                <span className="font-semibold">{agent.name}</span>
+              </div>
+              <div className="text-sm text-gray-600 mb-1">{agent.type}</div>
+              <div className="text-sm text-gray-500 mb-3">{agent.lastActivity}</div>
+              <div className="flex space-x-2">
+                <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                  Chat
+                </button>
+                <button className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                  View
+                </button>
+                <button className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                  Monitor
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <span className="mr-2">📝</span>
+          Recent Activity (Live Feed)
+        </h2>
+        <div className="space-y-3">
+          {recentActivity.map((activity, index) => (
+            <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+              <div className="text-sm text-gray-500 min-w-16">{activity.time}</div>
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">{activity.agent}</span>
+                <span className="text-gray-700 mx-1">{activity.action}</span>
+                {activity.detail && (
+                  <span className="text-gray-600 text-sm">- {activity.detail}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Live indicator - HARDCODED */}
+        <div className="mt-4 flex items-center justify-center space-x-2 text-sm text-gray-500">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span>Live feed - Updates every 30 seconds</span>
+        </div>
+      </div>
     </div>
   );
 }
