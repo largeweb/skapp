@@ -9,6 +9,7 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
+	"vars": { "GROQ_API_KEY": "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" },
 	"pages_build_output_dir": ".vercel/output/static",
 	"observability": {
 		"enabled": true
