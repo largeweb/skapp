@@ -3,6 +3,7 @@
 // Runtime types generated with workerd@1.20250816.0 2025-08-21 nodejs_compat
 declare namespace Cloudflare {
 	interface Env {
+		GROQ_API_KEY: string;
 	}
 }
 interface CloudflareEnv extends Cloudflare.Env {}
