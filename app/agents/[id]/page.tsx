@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
+export const runtime = 'edge'
+
 export default async function AgentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const [activeTab, setActiveTab] = useState('chat')

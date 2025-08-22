@@ -3,8 +3,8 @@
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
-		"cycle": "git add . ; git commit -m 'cycle' ; git push origin main ; git checkout preview ; git merge main ; git push origin preview ; git checkout main",
-		"cycle2": "git checkout prod ; git merge preview ; git push origin prod ; git checkout main",
+		"cycle": "git add . && git commit -m \"cycle\" && git push origin main && git checkout preview && git merge main && git push origin preview && git checkout main",
+		"cycle2": "git checkout prod && git merge preview && git push origin prod && git checkout main",
 		"dev": "next dev --turbopack",
 		"build": "next build",
 		"start": "next start",

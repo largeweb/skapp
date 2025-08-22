@@ -1,6 +1,11 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2024-12-19**: Fixed Cloudflare Pages Deployment Issues
+  - **🔧 Edge Runtime**: Added `export const runtime = 'edge'` to all dynamic pages
+  - **✅ Build Success**: Fixed deployment failures for `/agents/[id]` and `/agents/[id]/settings` routes
+  - **🚀 Deployment Ready**: All pages now properly configured for Cloudflare Pages edge runtime
+  - **📋 Pages Fixed**: `/agents`, `/agents/[id]`, `/agents/[id]/settings`, `/create` all have edge runtime exports
 - **2024-12-19**: Complete UI Redesign with Dark Mode and Framer Motion
   - **🎨 Sleek Dark Theme**: Complete redesign with dark mode support and glassmorphism effects
   - **✨ Framer Motion**: Added smooth animations and micro-interactions throughout the interface

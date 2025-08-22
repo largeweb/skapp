@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 
+export const runtime = 'edge'
+
 export default function AgentsPage() {
   // HARDCODED DATA - Replace with API calls later
   const agents = [

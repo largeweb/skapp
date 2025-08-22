@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+export const runtime = 'edge'
+
 export default function CreateAgentPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState({
