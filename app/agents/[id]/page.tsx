@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
 export default async function AgentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -82,10 +83,13 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
             <div className={`px-4 py-2 rounded-full text-sm font-medium ${agent.statusBg} ${agent.statusColor}`}>
               🟢 Awake ({agent.lastActivity})
             </div>
-            <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors">
+            <Link href={`/agents/${agent.id}/settings`} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors">
               ⚙️
-            </button>
-            <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors">
+            </Link>
+            <button 
+              onClick={() => alert(`Exporting data for ${agent.name}...\n\nThis would download:\n• Agent configuration\n• Memory layers\n• Activity history\n• Conversation logs`)}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors"
+            >
               📊 Export
             </button>
           </div>
@@ -142,7 +146,10 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
                       placeholder="Type message..."
                       className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    <button 
+                      onClick={() => alert('Chat functionality will be connected to Groq API in next phase.\n\nThis will:\n• Send message to agent\n• Get AI response via Groq\n• Update conversation history\n• Update agent memory')}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
                       Send
                     </button>
                   </div>

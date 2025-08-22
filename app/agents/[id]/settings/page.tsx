@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
 export default async function AgentSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -91,12 +92,12 @@ export default async function AgentSettingsPage({ params }: { params: Promise<{ 
             </h1>
             <p className="text-gray-600 mt-1">Configure your agent's behavior and capabilities</p>
           </div>
-          <button
-            onClick={() => window.history.back()}
+          <Link
+            href={`/agents/${id}`}
             className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             ← Back to Agent
-          </button>
+          </Link>
         </div>
       </div>
 

@@ -1,3 +1,7 @@
+'use client'
+
+import Link from 'next/link'
+
 export default function AgentsPage() {
   // HARDCODED DATA - Replace with API calls later
   const agents = [
@@ -66,10 +70,10 @@ export default function AgentsPage() {
               My Agents ({agents.length})
             </h1>
           </div>
-          <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors">
+          <Link href="/create" className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors">
             <span>+</span>
             <span>New</span>
-          </button>
+          </Link>
         </div>
         
         {/* Search and Filters - HARDCODED UI */}
@@ -130,19 +134,29 @@ export default function AgentsPage() {
 
                 {/* Action Buttons */}
                 <div className="flex space-x-2">
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                  <Link href={`/agents/${agent.id}`} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
                     Chat
-                  </button>
-                  <button className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                  </Link>
+                  <Link href={`/agents/${agent.id}`} className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
                     View
-                  </button>
-                  <button className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                  </Link>
+                  <Link href={`/agents/${agent.id}/settings`} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-colors">
                     ⚙️
-                  </button>
-                  <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                  </Link>
+                  <button 
+                    onClick={() => alert(`Exporting data for ${agent.name}...`)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                  >
                     📊
                   </button>
-                  <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                  <button 
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to delete ${agent.name}?`)) {
+                        alert(`${agent.name} would be deleted (HARDCODED)`)
+                      }
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                  >
                     🗑️
                   </button>
                 </div>

@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+import Link from 'next/link'
+
 export default function Dashboard() {
   // HARDCODED DATA - Replace with API calls later
   const systemStats = {
@@ -84,10 +86,10 @@ export default function Dashboard() {
             <span className="mr-2">🤖</span>
             Your Agents
           </h2>
-          <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center space-x-2 transition-colors">
+          <Link href="/create" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center space-x-2 transition-colors">
             <span>+</span>
             <span>New</span>
-          </button>
+          </Link>
         </div>
         
         <div className="grid grid-cols-3 gap-4">
@@ -100,15 +102,15 @@ export default function Dashboard() {
               <div className="text-sm text-gray-600 mb-1">{agent.type}</div>
               <div className="text-sm text-gray-500 mb-3">{agent.lastActivity}</div>
               <div className="flex space-x-2">
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                <Link href={`/agents/${agent.id}`} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
                   Chat
-                </button>
-                <button className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                </Link>
+                <Link href={`/agents/${agent.id}`} className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
                   View
-                </button>
-                <button className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                </Link>
+                <Link href={`/agents/${agent.id}`} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-colors">
                   Monitor
-                </button>
+                </Link>
               </div>
             </div>
           ))}
