@@ -37,4 +37,29 @@ export interface APIError {
   error: string;
   code?: string;
   details?: any;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  description: string;
+  status: 'awake' | 'sleep' | 'deep_sleep' | 'wakeup';
+  lastActivity: string;
+  createdAt: string;
+  memoryStats: {
+    pmem: number;
+    note: number;
+    thgt: number;
+    work: number;
+  };
+}
+
+export interface AgentsResponse {
+  agents: Agent[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
 } 
