@@ -1,6 +1,7 @@
-import Image from "next/image";
+'use client'
 
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 
 export default function Dashboard() {
   // HARDCODED DATA - Replace with API calls later
@@ -18,7 +19,8 @@ export default function Dashboard() {
       type: 'Research',
       status: 'awake',
       lastActivity: '2m ago',
-      statusColor: 'bg-green-500'
+      statusColor: 'bg-emerald-500',
+      statusRing: 'ring-emerald-500/20'
     },
     {
       id: 'content_creator',
@@ -26,7 +28,8 @@ export default function Dashboard() {
       type: 'Content',
       status: 'Sleep',
       lastActivity: '15m ago',
-      statusColor: 'bg-blue-500'
+      statusColor: 'bg-blue-500',
+      statusRing: 'ring-blue-500/20'
     },
     {
       id: 'discord_bot',
@@ -34,7 +37,8 @@ export default function Dashboard() {
       type: 'Discord',
       status: 'Thinking',
       lastActivity: '30s ago',
-      statusColor: 'bg-yellow-500'
+      statusColor: 'bg-amber-500',
+      statusRing: 'ring-amber-500/20'
     }
   ];
 
@@ -45,105 +49,183 @@ export default function Dashboard() {
     { time: '25m ago', agent: 'Agent1', action: 'took note', detail: '"Market trends show 25% growth..."' }
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut" as const
+      }
+    }
+  };
+
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="max-w-7xl mx-auto px-6 py-8 space-y-8"
+    >
       {/* Header */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">🚀 SpawnKit - Persistent AI Agents</h1>
-        <p className="text-gray-600">"Digital workers that think, learn & act"</p>
-      </div>
+      <motion.div 
+        variants={itemVariants}
+        className="text-center space-y-4"
+      >
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="flex justify-center mb-6"
+        >
+          <div className="text-6xl">🚀</div>
+        </motion.div>
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent">
+          SpawnKit - Persistent AI Agents
+        </h1>
+        <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+          Digital workers that think, learn & act autonomously
+        </p>
+      </motion.div>
 
       {/* System Stats */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
-        <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <span className="mr-2">📊</span>
-          System Stats
-        </h2>
-        <div className="grid grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{systemStats.activeAgents}</div>
-            <div className="text-sm text-gray-600">Active Agents</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{systemStats.notesToday}</div>
-            <div className="text-sm text-gray-600">Notes Today</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{systemStats.lastCycle}</div>
-            <div className="text-sm text-gray-600">Last Cycle</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">{systemStats.toolsExecuted}</div>
-            <div className="text-sm text-gray-600">Tools Executed</div>
-          </div>
-        </div>
-      </div>
+      <motion.div 
+        variants={itemVariants}
+        className="grid grid-cols-2 md:grid-cols-4 gap-6"
+      >
+        <motion.div 
+          whileHover={{ scale: 1.05 }}
+          className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 text-center hover:border-blue-500/50 transition-all duration-300"
+        >
+          <div className="text-3xl font-bold text-blue-400 mb-2">{systemStats.activeAgents}</div>
+          <div className="text-gray-400 text-sm">Active Agents</div>
+        </motion.div>
+        <motion.div 
+          whileHover={{ scale: 1.05 }}
+          className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 text-center hover:border-emerald-500/50 transition-all duration-300"
+        >
+          <div className="text-3xl font-bold text-emerald-400 mb-2">{systemStats.notesToday}</div>
+          <div className="text-gray-400 text-sm">Notes Today</div>
+        </motion.div>
+        <motion.div 
+          whileHover={{ scale: 1.05 }}
+          className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 text-center hover:border-purple-500/50 transition-all duration-300"
+        >
+          <div className="text-3xl font-bold text-purple-400 mb-2">{systemStats.lastCycle}</div>
+          <div className="text-gray-400 text-sm">Last Cycle</div>
+        </motion.div>
+        <motion.div 
+          whileHover={{ scale: 1.05 }}
+          className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 text-center hover:border-amber-500/50 transition-all duration-300"
+        >
+          <div className="text-3xl font-bold text-amber-400 mb-2">{systemStats.toolsExecuted}</div>
+          <div className="text-gray-400 text-sm">Tools Executed</div>
+        </motion.div>
+      </motion.div>
 
       {/* Your Agents */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold flex items-center">
-            <span className="mr-2">🤖</span>
-            Your Agents
+      <motion.div variants={itemVariants} className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-white flex items-center space-x-3">
+            <span className="text-3xl">🤖</span>
+            <span>Your Agents</span>
           </h2>
-          <Link href="/create" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center space-x-2 transition-colors">
-            <span>+</span>
-            <span>New</span>
-          </Link>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link 
+              href="/create" 
+              className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-200 shadow-lg shadow-emerald-600/25 hover:shadow-emerald-500/30"
+            >
+              <span className="text-lg">+</span>
+              <span>New Agent</span>
+            </Link>
+          </motion.div>
         </div>
         
-        <div className="grid grid-cols-3 gap-4">
-          {agents.map((agent) => (
-            <div key={agent.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-2">
-                <div className={`w-3 h-3 rounded-full ${agent.statusColor} mr-2`}></div>
-                <span className="font-semibold">{agent.name}</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {agents.map((agent, index) => (
+            <motion.div 
+              key={agent.id}
+              variants={itemVariants}
+              whileHover={{ y: -5, scale: 1.02 }}
+              className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 hover:border-gray-600/50 transition-all duration-300 group"
+            >
+              <div className="flex items-center mb-4">
+                <div className={`w-3 h-3 rounded-full ${agent.statusColor} mr-3 ring-4 ${agent.statusRing}`}></div>
+                <span className="font-semibold text-white group-hover:text-blue-400 transition-colors">{agent.name}</span>
               </div>
-              <div className="text-sm text-gray-600 mb-1">{agent.type}</div>
-              <div className="text-sm text-gray-500 mb-3">{agent.lastActivity}</div>
+              <div className="text-gray-400 mb-2">{agent.type}</div>
+              <div className="text-gray-500 text-sm mb-6">{agent.lastActivity}</div>
               <div className="flex space-x-2">
-                <Link href={`/agents/${agent.id}`} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                <Link 
+                  href={`/agents/${agent.id}`} 
+                  className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-center border border-blue-600/30 hover:border-blue-600/50"
+                >
                   Chat
                 </Link>
-                <Link href={`/agents/${agent.id}`} className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                <Link 
+                  href={`/agents/${agent.id}`} 
+                  className="flex-1 bg-gray-600/20 hover:bg-gray-600/30 text-gray-400 hover:text-gray-300 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-center border border-gray-600/30 hover:border-gray-600/50"
+                >
                   View
                 </Link>
-                <Link href={`/agents/${agent.id}`} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                <Link 
+                  href={`/agents/${agent.id}`} 
+                  className="flex-1 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 hover:text-purple-300 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-center border border-purple-600/30 hover:border-purple-600/50"
+                >
                   Monitor
                 </Link>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
-        <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <span className="mr-2">📝</span>
-          Recent Activity (Live Feed)
+      <motion.div variants={itemVariants} className="space-y-6">
+        <h2 className="text-2xl font-bold text-white flex items-center space-x-3">
+          <span className="text-3xl">📝</span>
+          <span>Recent Activity</span>
+          <div className="flex items-center space-x-2 ml-4">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span className="text-sm text-gray-400">Live feed</span>
+          </div>
         </h2>
-        <div className="space-y-3">
+        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 space-y-4">
           {recentActivity.map((activity, index) => (
-            <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-500 min-w-16">{activity.time}</div>
+            <motion.div 
+              key={index}
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: index * 0.1 }}
+              className="flex items-start space-x-4 p-4 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-all duration-200"
+            >
+              <div className="text-sm text-gray-500 min-w-16 font-mono">{activity.time}</div>
               <div className="flex-1">
-                <span className="font-medium text-gray-900">{activity.agent}</span>
-                <span className="text-gray-700 mx-1">{activity.action}</span>
+                <span className="font-medium text-white">{activity.agent}</span>
+                <span className="text-gray-300 mx-2">{activity.action}</span>
                 {activity.detail && (
-                  <span className="text-gray-600 text-sm">- {activity.detail}</span>
+                  <span className="text-gray-400 text-sm">- {activity.detail}</span>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
         
-        {/* Live indicator - HARDCODED */}
-        <div className="mt-4 flex items-center justify-center space-x-2 text-sm text-gray-500">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span>Live feed - Updates every 30 seconds</span>
+        <div className="text-center text-sm text-gray-500">
+          Updates every 30 seconds
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
