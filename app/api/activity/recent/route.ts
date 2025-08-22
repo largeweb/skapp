@@ -16,6 +16,73 @@ export async function GET(request: NextRequest) {
     // Get all agents
     const agentKeys = await env.SKAPP_AGENTS?.list({ prefix: 'agent:' }) || { keys: [] }
     
+    // If no agents exist, return sample activities for demonstration
+    if (!agentKeys.keys.length) {
+      const sampleActivities = [
+        {
+          id: 'research_bot-mode-1',
+          time: '2m ago',
+          agent: 'Research Assistant',
+          agentId: 'research_bot',
+          action: 'entered awake mode',
+          detail: 'Processing tasks',
+          type: 'mode' as const,
+          timestamp: Date.now() - 120000
+        },
+        {
+          id: 'research_bot-note-1',
+          time: '5m ago',
+          agent: 'Research Assistant',
+          agentId: 'research_bot',
+          action: 'took note',
+          detail: '"AI trends show increasing adoption of multimodal models..."',
+          type: 'note' as const,
+          timestamp: Date.now() - 300000
+        },
+        {
+          id: 'content_writer-work-1',
+          time: '8m ago',
+          agent: 'Content Writer',
+          agentId: 'content_writer',
+          action: 'posted to Discord',
+          detail: '#content-ideas',
+          type: 'tool' as const,
+          timestamp: Date.now() - 480000
+        },
+        {
+          id: 'data_analyst-thought-1',
+          time: '12m ago',
+          agent: 'Data Analyst',
+          agentId: 'data_analyst',
+          action: 'had thought',
+          detail: '"The dataset shows clear correlation between..."',
+          type: 'thought' as const,
+          timestamp: Date.now() - 720000
+        },
+        {
+          id: 'research_bot-work-1',
+          time: '15m ago',
+          agent: 'Research Assistant',
+          agentId: 'research_bot',
+          action: 'used web_search()',
+          detail: 'Latest AI research papers',
+          type: 'tool' as const,
+          timestamp: Date.now() - 900000
+        }
+      ]
+      
+      return Response.json({
+        activities: sampleActivities.slice(0, limit),
+        total: sampleActivities.length,
+        systemTime: estTime.toISOString(),
+        timezone: 'EST'
+      }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=30'
+        }
+      })
+    }
+    
     const allActivities: Array<{
       id: string
       time: string

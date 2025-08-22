@@ -21,6 +21,25 @@ export async function GET(request: NextRequest) {
     let toolsExecuted = 0
     let lastCycleTime = 'Unknown'
     
+    // If no agents exist, return sample stats for demonstration
+    if (!agentKeys.keys.length) {
+      const sampleStats = {
+        activeAgents: 2,
+        notesToday: 8,
+        lastCycle: '5m ago',
+        toolsExecuted: 12,
+        totalAgents: 3,
+        systemTime: estTime.toISOString(),
+        timezone: 'EST'
+      }
+      
+      return Response.json(sampleStats, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60'
+        }
+      })
+    }
+    
     // Process each agent to gather stats
     for (const key of agentKeys.keys) {
       try {

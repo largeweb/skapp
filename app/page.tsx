@@ -19,8 +19,8 @@ export default function Dashboard() {
       type: 'Research',
       status: 'awake',
       lastActivity: '2m ago',
-      statusColor: 'bg-emerald-500',
-      statusRing: 'ring-emerald-500/20'
+      statusColor: 'bg-blue-500',
+      statusRing: 'ring-blue-500/20'
     },
     {
       id: 'content_creator',
@@ -28,8 +28,8 @@ export default function Dashboard() {
       type: 'Content',
       status: 'Sleep',
       lastActivity: '15m ago',
-      statusColor: 'bg-blue-500',
-      statusRing: 'ring-blue-500/20'
+      statusColor: 'bg-blue-400',
+      statusRing: 'ring-blue-400/20'
     },
     {
       id: 'discord_bot',
@@ -37,8 +37,8 @@ export default function Dashboard() {
       type: 'Discord',
       status: 'Thinking',
       lastActivity: '30s ago',
-      statusColor: 'bg-amber-500',
-      statusRing: 'ring-amber-500/20'
+      statusColor: 'bg-blue-600',
+      statusRing: 'ring-blue-600/20'
     }
   ];
 
@@ -54,20 +54,38 @@ export default function Dashboard() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
+        staggerChildren: 0.1,
+        delayChildren: 0.2
       }
     }
   };
 
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
+    hidden: { y: 30, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1
+    }
+  };
+
+  const cardVariants = {
+    hidden: { y: 20, opacity: 0, scale: 0.95 },
     visible: {
       y: 0,
       opacity: 1,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut" as const
-      }
+      scale: 1
+    },
+    hover: {
+      y: -8,
+      scale: 1.02
+    }
+  };
+
+  const pulseVariants = {
+    initial: { scale: 1, opacity: 1 },
+    pulse: {
+      scale: [1, 1.1, 1],
+      opacity: [1, 0.8, 1]
     }
   };
 
@@ -83,20 +101,22 @@ export default function Dashboard() {
         variants={itemVariants}
         className="text-center space-y-4"
       >
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="flex justify-center mb-6"
+        <motion.h1 
+          className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-600 to-blue-800 bg-clip-text text-transparent"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div className="text-6xl">🚀</div>
-        </motion.div>
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-600 to-blue-800 dark:from-white dark:via-blue-100 dark:to-blue-200 bg-clip-text text-transparent">
           SpawnKit - Persistent AI Agents
-        </h1>
-        <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        </motion.h1>
+        <motion.p 
+          className="text-xl text-gray-600 max-w-2xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+        >
           Digital workers that think, learn & act autonomously
-        </p>
+        </motion.p>
       </motion.div>
 
       {/* System Stats */}
@@ -104,49 +124,59 @@ export default function Dashboard() {
         variants={itemVariants}
         className="grid grid-cols-2 md:grid-cols-4 gap-6"
       >
-        <motion.div 
-          whileHover={{ scale: 1.05 }}
-          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-all duration-300"
-        >
-          <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">{systemStats.activeAgents}</div>
-          <div className="text-gray-600 dark:text-gray-400 text-sm">Active Agents</div>
-        </motion.div>
-        <motion.div 
-          whileHover={{ scale: 1.05 }}
-          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center hover:border-green-500 dark:hover:border-green-500 transition-all duration-300"
-        >
-          <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{systemStats.notesToday}</div>
-          <div className="text-gray-600 dark:text-gray-400 text-sm">Notes Today</div>
-        </motion.div>
-        <motion.div 
-          whileHover={{ scale: 1.05 }}
-          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-all duration-300"
-        >
-          <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">{systemStats.lastCycle}</div>
-          <div className="text-gray-600 dark:text-gray-400 text-sm">Last Cycle</div>
-        </motion.div>
-        <motion.div 
-          whileHover={{ scale: 1.05 }}
-          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300"
-        >
-          <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mb-2">{systemStats.toolsExecuted}</div>
-          <div className="text-gray-600 dark:text-gray-400 text-sm">Tools Executed</div>
-        </motion.div>
+        {[
+          { value: systemStats.activeAgents, label: 'Active Agents', color: 'blue' },
+          { value: systemStats.notesToday, label: 'Notes Today', color: 'blue' },
+          { value: systemStats.lastCycle, label: 'Last Cycle', color: 'blue' },
+          { value: systemStats.toolsExecuted, label: 'Tools Executed', color: 'blue' }
+        ].map((stat, index) => (
+          <motion.div 
+            key={stat.label}
+            variants={cardVariants}
+            whileHover="hover"
+            className="bg-white border border-gray-200 rounded-xl p-6 text-center hover:border-blue-500 transition-all duration-300 shadow-sm hover:shadow-lg"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <motion.div 
+              className={`text-3xl font-bold text-blue-600 mb-2`}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ 
+                duration: 0.5, 
+                delay: 0.3 + index * 0.1,
+                type: "spring",
+                stiffness: 200
+              }}
+            >
+              {stat.value}
+            </motion.div>
+            <div className="text-gray-600 text-sm">{stat.label}</div>
+          </motion.div>
+        ))}
       </motion.div>
 
       {/* Your Agents */}
       <motion.div variants={itemVariants} className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center space-x-3">
-            <span className="text-3xl">🤖</span>
-            <span>Your Agents</span>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Your Agents
           </h2>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div 
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }}
+            className="relative"
+          >
             <Link 
               href="/create" 
               className="bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-200 shadow-lg shadow-blue-600/25 hover:shadow-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500"
             >
-              <span className="text-lg">+</span>
+              <motion.span 
+                className="text-lg"
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
+              >
+                +
+              </motion.span>
               <span>New Agent</span>
             </Link>
           </motion.div>
@@ -156,35 +186,42 @@ export default function Dashboard() {
           {agents.map((agent, index) => (
             <motion.div 
               key={agent.id}
-              variants={itemVariants}
-              whileHover={{ y: -5, scale: 1.02 }}
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 group"
+              variants={cardVariants}
+              whileHover="hover"
+              className="bg-white border border-gray-200 rounded-xl p-6 hover:border-gray-300 transition-all duration-300 group shadow-sm hover:shadow-lg"
+              style={{ animationDelay: `${index * 0.15}s` }}
             >
               <div className="flex items-center mb-4">
-                <div className={`w-3 h-3 rounded-full ${agent.statusColor} mr-3 ring-4 ${agent.statusRing}`}></div>
-                <span className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{agent.name}</span>
+                <motion.div 
+                  className={`w-3 h-3 rounded-full ${agent.statusColor} mr-3 ring-4 ${agent.statusRing}`}
+                  variants={pulseVariants}
+                  initial="initial"
+                  animate="pulse"
+                />
+                <span className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{agent.name}</span>
               </div>
-              <div className="text-gray-600 dark:text-gray-400 mb-2">{agent.type}</div>
-              <div className="text-gray-500 dark:text-gray-500 text-sm mb-6">{agent.lastActivity}</div>
-              <div className="flex space-x-2">
-                <Link 
-                  href={`/agents/${agent.id}`} 
-                  className="flex-1 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-center border border-blue-200 dark:border-blue-700 hover:border-blue-300 dark:hover:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  Chat
-                </Link>
-                <Link 
-                  href={`/agents/${agent.id}`} 
-                  className="flex-1 bg-gray-50 dark:bg-gray-700/20 hover:bg-gray-100 dark:hover:bg-gray-700/30 text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-center border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  View
-                </Link>
-                <Link 
-                  href={`/agents/${agent.id}`} 
-                  className="flex-1 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-center border border-blue-200 dark:border-blue-700 hover:border-blue-300 dark:hover:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  Monitor
-                </Link>
+              <div className="text-gray-600 mb-2">{agent.type}</div>
+              <div className="text-gray-500 text-sm mb-6">{agent.lastActivity}</div>
+              <div className="flex space-x-3">
+                {[
+                  { label: 'Chat', href: `/agents/${agent.id}`, icon: '▶️', color: 'blue', title: 'Chat with agent' },
+                  { label: 'View', href: `/agents/${agent.id}`, icon: '👁️', color: 'blue', title: 'View details' },
+                  { label: 'Monitor', href: `/agents/${agent.id}`, icon: '📊', color: 'blue', title: 'Monitor activity' }
+                ].map((button, btnIndex) => (
+                  <motion.div
+                    key={button.label}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title={button.title}
+                  >
+                    <Link 
+                      href={button.href}
+                      className="w-12 h-12 rounded-lg text-lg transition-all duration-200 border-2 flex items-center justify-center text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400 hover:bg-blue-50"
+                    >
+                      {button.icon}
+                    </Link>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
           ))}
@@ -193,38 +230,60 @@ export default function Dashboard() {
 
       {/* Recent Activity */}
       <motion.div variants={itemVariants} className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center space-x-3">
-          <span className="text-3xl">📝</span>
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
           <span>Recent Activity</span>
           <div className="flex items-center space-x-2 ml-4">
-            <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">Live feed</span>
+            <motion.div 
+              className="w-2 h-2 bg-blue-500 rounded-full"
+              animate={{ 
+                scale: [1, 1.2, 1],
+                opacity: [1, 0.7, 1]
+              }}
+              transition={{ 
+                duration: 1.5, 
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
+            <span className="text-sm text-gray-600">Live feed</span>
           </div>
         </h2>
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-4">
+        <motion.div 
+          className="bg-white border border-gray-200 rounded-xl p-6 space-y-4 shadow-sm"
+          variants={cardVariants}
+        >
           {recentActivity.map((activity, index) => (
             <motion.div 
               key={index}
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: index * 0.1 }}
-              className="flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-all duration-200"
+              transition={{ delay: index * 0.1, duration: 0.5 }}
+              className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200"
+              whileHover={{ 
+                x: 5,
+                backgroundColor: "#f8fafc"
+              }}
             >
-              <div className="text-sm text-gray-500 dark:text-gray-500 min-w-16 font-mono">{activity.time}</div>
+              <div className="text-sm text-gray-500 min-w-16 font-mono">{activity.time}</div>
               <div className="flex-1">
-                <span className="font-medium text-gray-900 dark:text-white">{activity.agent}</span>
-                <span className="text-gray-600 dark:text-gray-300 mx-2">{activity.action}</span>
+                <span className="font-medium text-gray-900">{activity.agent}</span>
+                <span className="text-gray-600 mx-2">{activity.action}</span>
                 {activity.detail && (
-                  <span className="text-gray-500 dark:text-gray-400 text-sm">- {activity.detail}</span>
+                  <span className="text-gray-500 text-sm">- {activity.detail}</span>
                 )}
               </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
         
-        <div className="text-center text-sm text-gray-500 dark:text-gray-500">
+        <motion.div 
+          className="text-center text-sm text-gray-500"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+        >
           Updates every 30 seconds
-        </div>
+        </motion.div>
       </motion.div>
     </motion.div>
   );

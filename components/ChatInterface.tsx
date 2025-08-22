@@ -54,15 +54,25 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
       const response = await fetch(`/api/agents/${agentId}/memory?limit=3`)
       if (response.ok) {
         const data = await response.json() as any
+        
+        // Add comprehensive null checks and fallbacks
+        const memoryData = data?.memory || {}
+        const pmem = memoryData.pmem || []
+        const note = memoryData.note || []
+        const thgt = memoryData.thgt || []
+        const work = memoryData.work || []
+        
         setMemoryContext({
-          pmem: data.memory.pmem.slice(0, 3).map((entry: any) => entry.content),
-          note: data.memory.note.slice(0, 3).map((entry: any) => entry.content),
-          thgt: data.memory.thgt.slice(0, 3).map((entry: any) => entry.content),
-          work: data.memory.work.slice(0, 3).map((entry: any) => entry.content)
+          pmem: Array.isArray(pmem) ? pmem.slice(0, 3).map((entry: any) => entry?.content || '').filter(Boolean) : [],
+          note: Array.isArray(note) ? note.slice(0, 3).map((entry: any) => entry?.content || '').filter(Boolean) : [],
+          thgt: Array.isArray(thgt) ? thgt.slice(0, 3).map((entry: any) => entry?.content || '').filter(Boolean) : [],
+          work: Array.isArray(work) ? work.slice(0, 3).map((entry: any) => entry?.content || '').filter(Boolean) : []
         })
       }
     } catch (error) {
       console.error('Failed to fetch memory context:', error)
+      // Set empty memory context on error
+      setMemoryContext({ pmem: [], note: [], thgt: [], work: [] })
     }
   }
 
@@ -206,19 +216,19 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
       {/* Main Chat Area */}
       <div className={`flex flex-col ${showMemorySidebar ? 'flex-1' : 'w-full'}`}>
         {/* Chat Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold">
               {agentName.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900 dark:text-gray-100">{agentName}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-500">AI Agent</p>
+              <h2 className="font-semibold text-gray-900">{agentName}</h2>
+              <p className="text-sm text-gray-500">AI Agent</p>
             </div>
           </div>
           <button
             onClick={() => setShowMemorySidebar(!showMemorySidebar)}
-            className="p-2 text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             {showMemorySidebar ? '📋' : '🧠'}
           </button>
@@ -240,12 +250,12 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
                   className={`max-w-[70%] p-3 rounded-lg ${
                     message.role === 'user'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                      : 'bg-gray-100 text-gray-900'
                   }`}
                 >
                   <div className="whitespace-pre-wrap">{message.content}</div>
                   <div className={`text-xs mt-1 ${
-                    message.role === 'user' ? 'text-blue-200' : 'text-gray-500 dark:text-gray-500'
+                    message.role === 'user' ? 'text-blue-200' : 'text-gray-500'
                   }`}>
                     {formatTime(message.timestamp)}
                   </div>
@@ -260,15 +270,15 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
                 animate={{ opacity: 1, y: 0 }}
                 className="flex justify-start"
               >
-                              <div className="max-w-[70%] p-3 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                <div className="whitespace-pre-wrap">
-                  {streamingMessage}
-                  <span className="animate-pulse">▋</span>
+                <div className="max-w-[70%] p-3 rounded-lg bg-gray-100 text-gray-900">
+                  <div className="whitespace-pre-wrap">
+                    {streamingMessage}
+                    <span className="animate-pulse">▋</span>
+                  </div>
+                  <div className="text-xs mt-1 text-gray-500">
+                    {formatTime(new Date().toISOString())}
+                  </div>
                 </div>
-                <div className="text-xs mt-1 text-gray-500 dark:text-gray-500">
-                  {formatTime(new Date().toISOString())}
-                </div>
-              </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -279,13 +289,13 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
               animate={{ opacity: 1 }}
               className="flex justify-start"
             >
-                          <div className="max-w-[70%] p-3 rounded-lg bg-gray-100 dark:bg-gray-700">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="max-w-[70%] p-3 rounded-lg bg-gray-100">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
               </div>
-            </div>
             </motion.div>
           )}
           
@@ -297,14 +307,14 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-600 rounded-lg"
+            className="mx-4 p-3 bg-red-50 border border-red-300 rounded-lg"
           >
-            <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+            <p className="text-red-600 text-sm">{error}</p>
           </motion.div>
         )}
 
         {/* Input Area */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="p-4 border-t border-gray-200 bg-white">
           <form onSubmit={handleSubmit} className="flex space-x-3">
             <textarea
               ref={inputRef}
@@ -312,7 +322,7 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
-              className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+              className="flex-1 p-3 border border-gray-300 rounded-lg resize-none bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
               rows={1}
               disabled={isLoading}
               style={{ minHeight: '44px', maxHeight: '120px' }}
@@ -335,73 +345,73 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 300, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            className="border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-hidden"
+            className="border-l border-gray-200 bg-gray-50 overflow-hidden"
           >
             <div className="p-4 h-full overflow-y-auto">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Memory Context</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">Memory Context</h3>
               
               <div className="space-y-4">
                 {/* Permanent Memory */}
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-700">
-                  <h4 className="font-medium text-purple-700 dark:text-purple-400 mb-2">🧠 Permanent Memory</h4>
+                <div className="bg-white p-3 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-700 mb-2">🧠 Permanent Memory</h4>
                   {memoryContext.pmem.length > 0 ? (
                     <div className="space-y-2">
                       {memoryContext.pmem.map((content, index) => (
-                        <div key={index} className="text-sm text-gray-600 dark:text-gray-400 bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
+                        <div key={index} className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
                           {content}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 dark:text-gray-500">No permanent memory</p>
+                    <p className="text-sm text-gray-500">No permanent memory</p>
                   )}
                 </div>
 
                 {/* Notes */}
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
-                  <h4 className="font-medium text-blue-700 dark:text-blue-400 mb-2">📝 Recent Notes</h4>
+                <div className="bg-white p-3 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-700 mb-2">📝 Recent Notes</h4>
                   {memoryContext.note.length > 0 ? (
                     <div className="space-y-2">
                       {memoryContext.note.map((content, index) => (
-                        <div key={index} className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+                        <div key={index} className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
                           {content}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 dark:text-gray-500">No recent notes</p>
+                    <p className="text-sm text-gray-500">No recent notes</p>
                   )}
                 </div>
 
                 {/* Thoughts */}
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-700">
-                  <h4 className="font-medium text-green-700 dark:text-green-400 mb-2">💭 Recent Thoughts</h4>
+                <div className="bg-white p-3 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-700 mb-2">💭 Recent Thoughts</h4>
                   {memoryContext.thgt.length > 0 ? (
                     <div className="space-y-2">
                       {memoryContext.thgt.map((content, index) => (
-                        <div key={index} className="text-sm text-gray-600 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 p-2 rounded">
+                        <div key={index} className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
                           {content}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 dark:text-gray-500">No recent thoughts</p>
+                    <p className="text-sm text-gray-500">No recent thoughts</p>
                   )}
                 </div>
 
                 {/* Work Items */}
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-orange-200 dark:border-orange-700">
-                  <h4 className="font-medium text-orange-700 dark:text-orange-400 mb-2">⚡ Recent Work</h4>
+                <div className="bg-white p-3 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-700 mb-2">⚡ Recent Work</h4>
                   {memoryContext.work.length > 0 ? (
                     <div className="space-y-2">
                       {memoryContext.work.map((content, index) => (
-                        <div key={index} className="text-sm text-gray-600 dark:text-gray-400 bg-orange-50 dark:bg-orange-900/20 p-2 rounded">
+                        <div key={index} className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
                           {content}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 dark:text-gray-500">No recent work</p>
+                    <p className="text-sm text-gray-500">No recent work</p>
                   )}
                 </div>
               </div>

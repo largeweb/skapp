@@ -62,17 +62,17 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   const tabs = [
-    { id: 'chat', label: '💬 Chat', icon: '💬' },
-    { id: 'memory', label: '🧠 Memory', icon: '🧠' },
-    { id: 'activity', label: '📈 Activity', icon: '📈' },
-    { id: 'settings', label: '⚙️ Settings', icon: '⚙️' }
+    { id: 'chat', label: 'Chat', icon: 'Chat' },
+    { id: 'memory', label: 'Memory', icon: 'Memory' },
+    { id: 'activity', label: 'Activity', icon: 'Activity' },
+    { id: 'settings', label: 'Settings', icon: 'Settings' }
   ]
 
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       </div>
     )
@@ -85,7 +85,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           <div className="text-red-600 mb-2">Error loading agent</div>
           <button 
             onClick={() => fetchAgent(id)}
-            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Retry
           </button>
@@ -96,10 +96,10 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'awake': return { bg: 'bg-green-100', text: 'text-green-600' }
+      case 'awake': return { bg: 'bg-blue-100', text: 'text-blue-600' }
       case 'sleep': return { bg: 'bg-blue-100', text: 'text-blue-600' }
-      case 'deep_sleep': return { bg: 'bg-purple-100', text: 'text-purple-600' }
-      case 'wakeup': return { bg: 'bg-orange-100', text: 'text-orange-600' }
+      case 'deep_sleep': return { bg: 'bg-blue-100', text: 'text-blue-600' }
+      case 'wakeup': return { bg: 'bg-blue-100', text: 'text-blue-600' }
       default: return { bg: 'bg-gray-100', text: 'text-gray-600' }
     }
   }
@@ -109,10 +109,9 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="max-w-6xl mx-auto p-6">
       {/* Header */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border mb-6">
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mb-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <div className="text-3xl">🤖</div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{agent.name}</h1>
               <p className="text-gray-600">{agent.description}</p>
@@ -120,24 +119,24 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           </div>
           <div className="flex items-center space-x-4">
             <div className={`px-4 py-2 rounded-full text-sm font-medium ${statusColors.bg} ${statusColors.text}`}>
-              🟢 {agent.currentMode || 'awake'} ({agent.lastActivity || 'Unknown'})
+              {agent.currentMode || 'awake'} ({agent.lastActivity || 'Unknown'})
             </div>
             <Link href={`/agents/${agent.agentId}/settings`} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors">
-              ⚙️
+              Settings
             </Link>
             <button 
               onClick={handleExport}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
             >
-              📊 Export
+              Export
             </button>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="flex border-b">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex border-b border-gray-200">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -172,9 +171,8 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
 
           {activeTab === 'activity' && (
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold">📈 Activity Timeline</h3>
+              <h3 className="text-xl font-semibold">Activity Timeline</h3>
               <div className="text-center py-12 text-gray-500">
-                <div className="text-4xl mb-4">📈</div>
                 <p>Activity timeline will be implemented with real agent data</p>
                 <p className="text-sm mt-2">Shows agent actions, tool usage, and mode changes</p>
               </div>
@@ -183,17 +181,17 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
 
           {activeTab === 'settings' && (
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold">⚙️ Agent Settings</h3>
+              <h3 className="text-xl font-semibold">Agent Settings</h3>
               
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="text-yellow-800">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="text-blue-800">
                   <strong>Note:</strong> Settings functionality is available in the dedicated settings page.
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-medium mb-2">📝 Basic Info</h4>
+                  <h4 className="font-medium mb-2">Basic Info</h4>
                   <div className="bg-gray-50 p-3 rounded border text-gray-600">
                     Name: {agent.name}<br/>
                     Description: {agent.description}<br/>
@@ -202,7 +200,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
                 
                 <div>
-                  <h4 className="font-medium mb-2">🧠 Memory Configuration</h4>
+                  <h4 className="font-medium mb-2">Memory Configuration</h4>
                   <div className="bg-gray-50 p-3 rounded border text-gray-600">
                     Core Knowledge: {agent.coreKnowledge?.length || 0} entries<br/>
                     Available tools: {Object.entries(agent.availableTools || {})
@@ -213,7 +211,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
 
                 <div>
-                  <h4 className="font-medium mb-2">⏰ Schedule</h4>
+                  <h4 className="font-medium mb-2">Schedule</h4>
                   <div className="bg-gray-50 p-3 rounded border text-gray-600">
                     Timezone: EST<br/>
                     Current Mode: {agent.currentMode || 'awake'}<br/>

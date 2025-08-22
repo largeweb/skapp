@@ -42,9 +42,19 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
         throw new Error('Failed to fetch memory')
       }
       const data = await response.json() as any
-      setMemory(data.memory)
+      
+      // Ensure we have the correct memory structure with fallbacks
+      const memoryData = data.memory || {}
+      setMemory({
+        pmem: memoryData.pmem || [],
+        note: memoryData.note || [],
+        thgt: memoryData.thgt || [],
+        work: memoryData.work || []
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
+      // Set empty memory structure on error
+      setMemory({ pmem: [], note: [], thgt: [], work: [] })
     } finally {
       setLoading(false)
     }
@@ -69,7 +79,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     }
   }
 
-  const filteredMemory = memory[activeLayer].filter(entry =>
+  const filteredMemory = (memory[activeLayer] || []).filter(entry =>
     entry.content.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -77,9 +87,9 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     pmem: {
       title: '🧠 Permanent Memory',
       description: 'Core knowledge and persistent information',
-      color: 'from-purple-500 to-purple-700',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200',
+      color: 'from-blue-500 to-blue-700',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
       icon: '🧠'
     },
     note: {
@@ -93,17 +103,17 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     thgt: {
       title: '💭 Thoughts',
       description: 'Internal thoughts and insights',
-      color: 'from-green-500 to-green-700',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
+      color: 'from-blue-500 to-blue-700',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
       icon: '💭'
     },
     work: {
       title: '⚡ Work Items',
       description: 'Active work and conversations',
-      color: 'from-orange-500 to-orange-700',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-200',
+      color: 'from-blue-500 to-blue-700',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
       icon: '⚡'
     }
   }
@@ -126,7 +136,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
   if (loading) {
     return (
       <div className={`flex items-center justify-center h-64 ${className}`}>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -134,7 +144,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
   if (error) {
     return (
       <div className={`text-center p-6 ${className}`}>
-        <div className="text-red-600 dark:text-red-400 mb-2">Error loading memory</div>
+        <div className="text-red-600 mb-2">Error loading memory</div>
         <button 
           onClick={fetchMemory}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white rounded transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
@@ -158,22 +168,22 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               activeLayer === layer
                 ? `bg-gradient-to-r ${layerConfig[layer].color} text-white shadow-lg`
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             <span className="mr-2">{layerConfig[layer].icon}</span>
             {layerConfig[layer].title}
             <span className="ml-2 bg-white/20 px-2 py-1 rounded text-sm">
-              {memory[layer].length}
+              {(memory[layer] || []).length}
             </span>
           </motion.button>
         ))}
       </div>
 
       {/* Active Layer Info */}
-      <div className={`p-4 rounded-lg ${layerConfig[activeLayer].bgColor} dark:bg-gray-800 ${layerConfig[activeLayer].borderColor} dark:border-gray-600 border`}>
-        <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-gray-100">{layerConfig[activeLayer].title}</h3>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">{layerConfig[activeLayer].description}</p>
+      <div className={`p-4 rounded-lg ${layerConfig[activeLayer].bgColor} ${layerConfig[activeLayer].borderColor} border`}>
+        <h3 className="text-lg font-semibold mb-1 text-gray-900">{layerConfig[activeLayer].title}</h3>
+        <p className="text-gray-600 text-sm">{layerConfig[activeLayer].description}</p>
       </div>
 
       {/* Search and Add */}
@@ -184,7 +194,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
             placeholder="Search memory..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
           />
         </div>
         <AddMemoryEntry 
@@ -202,7 +212,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="text-center py-12 text-gray-500 dark:text-gray-500"
+              className="text-center py-12 text-gray-500"
             >
               <div className="text-4xl mb-4">{layerConfig[activeLayer].icon}</div>
               <p>No {activeLayer} entries found</p>
@@ -217,35 +227,35 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.1 }}
-                  className={`p-4 rounded-lg border ${layerConfig[activeLayer].borderColor} dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow`}
+                  className={`p-4 rounded-lg border ${layerConfig[activeLayer].borderColor} bg-white shadow-sm hover:shadow-md transition-shadow`}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center space-x-2">
                       <span className="text-lg">{layerConfig[activeLayer].icon}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-500 font-mono">{entry.id.slice(0, 8)}</span>
+                      <span className="text-xs text-gray-500 font-mono">{entry.id?.slice(0, 8) || 'unknown'}</span>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-500">
-                      {getTimeAgo(entry.createdAt)}
+                    <div className="text-xs text-gray-500">
+                      {entry.createdAt ? getTimeAgo(entry.createdAt) : 'Unknown'}
                     </div>
                   </div>
                   
-                  <div className="text-gray-800 dark:text-gray-100 mb-3 whitespace-pre-wrap">
-                    {entry.content}
+                  <div className="text-gray-800 mb-3 whitespace-pre-wrap">
+                    {entry.content || 'No content'}
                   </div>
                   
-                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-500">
-                    <span>Created: {formatDate(entry.createdAt)}</span>
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Created: {entry.createdAt ? formatDate(entry.createdAt) : 'Unknown'}</span>
                     {entry.expiresAt && (
                       <span>Expires: {formatDate(entry.expiresAt)}</span>
                     )}
                   </div>
                   
-                  {entry.metadata && Object.keys(entry.metadata).length > 0 && (
+                  {entry.metadata && typeof entry.metadata === 'object' && Object.keys(entry.metadata).length > 0 && (
                     <details className="mt-2">
-                      <summary className="text-xs text-gray-500 dark:text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-400">
+                      <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
                         Metadata
                       </summary>
-                      <pre className="text-xs bg-gray-50 dark:bg-gray-700 p-2 rounded mt-1 overflow-x-auto text-gray-900 dark:text-gray-100">
+                      <pre className="text-xs bg-gray-50 p-2 rounded mt-1 overflow-x-auto text-gray-900">
                         {JSON.stringify(entry.metadata, null, 2)}
                       </pre>
                     </details>
@@ -290,7 +300,7 @@ function AddMemoryEntry({ layer, onAdd, layerConfig }: AddMemoryEntryProps) {
         placeholder={`Add ${layer}...`}
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+        className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
         disabled={isAdding}
       />
       <button
@@ -299,7 +309,7 @@ function AddMemoryEntry({ layer, onAdd, layerConfig }: AddMemoryEntryProps) {
         className={`px-4 py-2 rounded-lg font-medium transition-all ${
           content.trim() && !isAdding
             ? `bg-gradient-to-r ${layerConfig.color} text-white hover:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500`
-            : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60'
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
         }`}
       >
         {isAdding ? 'Adding...' : 'Add'}

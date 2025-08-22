@@ -1,17 +1,15 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { Agent, AgentsResponse } from '@/lib/types'
-
-export const runtime = 'edge'
+import Link from 'next/link'
 
 export default function AgentsPage() {
-  const [agents, setAgents] = useState<Agent[]>([])
+  const [agents, setAgents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedAgents, setSelectedAgents] = useState<string[]>([])
 
   useEffect(() => {
     fetchAgents()
@@ -19,202 +17,308 @@ export default function AgentsPage() {
 
   const fetchAgents = async () => {
     try {
-      setLoading(true)
       const response = await fetch('/api/agents')
-      if (!response.ok) {
-        throw new Error('Failed to fetch agents')
+      if (response.ok) {
+        const data = await response.json() as any
+        setAgents(data.agents || [])
+      } else {
+        setError('Failed to load agents')
       }
-      const data = await response.json() as AgentsResponse
-      setAgents(data.agents || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      setError('Network error')
     } finally {
       setLoading(false)
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'awake': return { text: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' }
-      case 'sleep': return { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' }
-      case 'deep_sleep': return { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' }
-      case 'wakeup': return { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' }
-      default: return { text: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-50 dark:bg-gray-700/20' }
+  const deleteAgent = async (agentId: string) => {
+    try {
+      const response = await fetch(`/api/agents/${agentId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        // Remove from local state
+        setAgents(prev => prev.filter(agent => agent.id !== agentId))
+        // Remove from selected if it was selected
+        setSelectedAgents(prev => prev.filter(id => id !== agentId))
+      } else {
+        const errorData = await response.json() as any
+        alert(`Failed to delete agent: ${errorData.error || 'Unknown error'}`)
+      }
+    } catch (err) {
+      console.error('Error deleting agent:', err)
+      alert('Failed to delete agent')
     }
   }
 
+  const exportAgent = async (agentId: string) => {
+    try {
+      const response = await fetch(`/api/agents/${agentId}/export`)
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `agent-${agentId}-export.csv`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        alert('Failed to export agent')
+      }
+    } catch (err) {
+      console.error('Error exporting agent:', err)
+      alert('Failed to export agent')
+    }
+  }
+
+  const bulkExport = async () => {
+    for (const agentId of selectedAgents) {
+      await exportAgent(agentId)
+    }
+  }
+
+  const bulkPause = async () => {
+    try {
+      // Update all selected agents to 'sleep' status
+      const updatePromises = selectedAgents.map(agentId =>
+        fetch(`/api/agents/${agentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentMode: 'sleep' })
+        })
+      )
+      
+      await Promise.all(updatePromises)
+      fetchAgents() // Refresh the list
+      setSelectedAgents([]) // Clear selection
+    } catch (err) {
+      console.error('Error pausing agents:', err)
+      alert('Failed to pause agents')
+    }
+  }
+
+  const bulkDelete = async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedAgents.length} agents? This cannot be undone.`)) {
+      return
+    }
+    
+    try {
+      const deletePromises = selectedAgents.map(agentId => deleteAgent(agentId))
+      await Promise.all(deletePromises)
+      setSelectedAgents([]) // Clear selection
+    } catch (err) {
+      console.error('Error deleting agents:', err)
+      alert('Failed to delete some agents')
+    }
+  }
+
+  const toggleAgentSelection = (agentId: string) => {
+    setSelectedAgents(prev => 
+      prev.includes(agentId) 
+        ? prev.filter(id => id !== agentId)
+        : [...prev, agentId]
+    )
+  }
+
   const filteredAgents = agents.filter(agent => {
-    const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         agent.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         agent.id.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = agent.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         agent.name?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || agent.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-              <span className="mr-3">🤖</span>
-              My Agents ({agents.length})
-            </h1>
-          </div>
-          <Link href="/create" className="bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500">
-            <span>+</span>
-            <span>New</span>
-          </Link>
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
-        
-        {/* Search and Filters */}
-        <div className="flex space-x-4 mt-4">
-          <input 
-            type="text" 
-            placeholder="🔍 Search agents..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-          />
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="text-center">
+          <div className="text-red-600 text-lg mb-4">Error loading agents</div>
+          <button 
+            onClick={fetchAgents}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
-            <option value="all">Filter: All</option>
-            <option value="awake">Awake</option>
-            <option value="sleep">Sleep</option>
-            <option value="deep_sleep">Deep Sleep</option>
-            <option value="wakeup">Wakeup</option>
-          </select>
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            My Agents ({agents.length})
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Manage your AI agents and their configurations
+          </p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={fetchAgents}
+            disabled={loading}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-50"
+          >
+            Refresh
+          </button>
+          <Link 
+            href="/create" 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-all duration-200"
+          >
+            + New
+          </Link>
         </div>
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading agents...</p>
+      {/* Search and Filter */}
+      <div className="flex items-center space-x-4">
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Search agents..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
-      )}
-
-      {/* Error State */}
-      {error && (
-        <div className="text-center py-12">
-          <div className="text-red-600 dark:text-red-400 mb-4">Error loading agents</div>
-          <button 
-            onClick={fetchAgents}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white rounded transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            Retry
-          </button>
-        </div>
-      )}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="all">Filter: All</option>
+          <option value="awake">Awake</option>
+          <option value="sleep">Sleep</option>
+          <option value="deep_sleep">Deep Sleep</option>
+          <option value="wakeup">Wakeup</option>
+        </select>
+      </div>
 
       {/* Agents List */}
-      {!loading && !error && (
-        <>
-          {filteredAgents.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-4xl mb-4">🤖</div>
-              <p className="text-gray-600 dark:text-gray-400">No agents found</p>
-              {searchTerm && <p className="text-sm mt-2 text-gray-500 dark:text-gray-500">Try adjusting your search</p>}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredAgents.map((agent) => {
-                const statusColors = getStatusColor(agent.status)
-                return (
-          <div key={agent.id} className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
+      <div className="space-y-4">
+        {filteredAgents.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No agents found</p>
+          </div>
+        ) : (
+          filteredAgents.map((agent, index) => (
+            <div
+              key={agent.id || index}
+              className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-lg transition-all duration-300"
+            >
               <div className="flex items-center space-x-4">
-                {/* Checkbox - HARDCODED */}
-                <input type="checkbox" className="w-4 h-4 text-blue-600 dark:text-blue-400 rounded focus:ring-2 focus:ring-blue-500" />
-                
-                {/* Agent Icon and Info */}
-                <div className="flex items-center space-x-3">
-                  <div className="text-2xl">🤖</div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{agent.name}</h3>
-                    <p className="text-gray-600 dark:text-gray-400">{agent.description}</p>
-                    <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500 dark:text-gray-500">
-                      <span>Memory: {agent.memoryStats?.pmem || 0} PMEM, {agent.memoryStats?.note || 0} notes</span>
-                      <span>•</span>
-                      <span>{agent.lastActivity || 'Unknown'}</span>
-                    </div>
+                <input
+                  type="checkbox"
+                  checked={selectedAgents.includes(agent.id)}
+                  onChange={() => toggleAgentSelection(agent.id)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h3 className="font-semibold text-gray-900">{agent.id || 'No ID'}</h3>
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
+                      {agent.status || 'unknown'}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-2">{agent.description || agent.name || 'No description'}</p>
+                  <div className="text-gray-500 text-sm">
+                    Memory: {agent.memoryStats?.pmem || 0} PMEM, {agent.memoryStats?.note || 0} notes
+                  </div>
+                  <div className="text-gray-400 text-xs mt-1">
+                    {new Date(agent.createdAt || agent.lastActivity || Date.now()).toISOString()}
                   </div>
                 </div>
-              </div>
 
-              {/* Status and Actions */}
-              <div className="flex items-center space-x-4">
-                {/* Status Badge */}
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors.bg} ${statusColors.text}`}>
-                  {agent.status === 'awake' && '🟢'}
-                  {agent.status === 'sleep' && '🔵'}
-                  {agent.status === 'deep_sleep' && '🟣'}
-                  {agent.status === 'wakeup' && '🟠'}
-                  <span className="ml-1 capitalize">{agent.status}</span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex space-x-2">
-                  <Link href={`/agents/${agent.id}`} className="bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors focus-visible:ring-2 focus-visible:ring-blue-500">
-                    Chat
+                <div className="flex space-x-3">
+                  <Link
+                    href={`/agents/${agent.id}`}
+                    className="w-12 h-12 rounded-lg text-lg transition-all duration-200 border-2 flex items-center justify-center text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400 hover:bg-blue-50"
+                    title="Chat with agent"
+                  >
+                    ▶️
                   </Link>
-                  <Link href={`/agents/${agent.id}`} className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 px-3 py-1 rounded text-sm transition-colors focus-visible:ring-2 focus-visible:ring-blue-500">
-                    View
+                  <Link
+                    href={`/agents/${agent.id}`}
+                    className="w-12 h-12 rounded-lg text-lg transition-all duration-200 border-2 flex items-center justify-center text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400 hover:bg-blue-50"
+                    title="View agent details"
+                  >
+                    👁️
                   </Link>
-                  <Link href={`/agents/${agent.id}/settings`} className="bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors focus-visible:ring-2 focus-visible:ring-blue-500">
+                  <Link
+                    href={`/agents/${agent.id}/settings`}
+                    className="w-12 h-12 rounded-lg text-lg transition-all duration-200 border-2 flex items-center justify-center text-gray-600 hover:text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                    title="Agent settings"
+                  >
                     ⚙️
                   </Link>
-                  <button 
-                    onClick={() => alert(`Exporting data for ${agent.name}...`)}
-                    className="bg-green-600 hover:bg-green-700 focus:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
+                  <button
+                    onClick={() => exportAgent(agent.id)}
+                    className="w-12 h-12 rounded-lg text-lg transition-all duration-200 border-2 flex items-center justify-center text-gray-600 hover:text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                    title="Export agent data"
                   >
-                    📊
+                    📥
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
-                      if (confirm(`Are you sure you want to delete ${agent.name}?`)) {
-                        alert(`${agent.name} would be deleted (HARDCODED)`)
+                      if (confirm('Are you sure you want to delete this agent?')) {
+                        deleteAgent(agent.id)
                       }
                     }}
-                    className="bg-red-600 hover:bg-red-700 focus:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
+                    className="w-12 h-12 rounded-lg text-lg transition-all duration-200 border-2 flex items-center justify-center text-red-600 hover:text-red-700 border-red-300 hover:border-red-400 hover:bg-red-50"
+                    title="Delete agent"
                   >
                     🗑️
                   </button>
                 </div>
               </div>
             </div>
-          </div>
-                )
-              })}
-            </div>
-          )}
-        </>
-      )}
+          ))
+        )}
+      </div>
 
-      {/* Bulk Actions - HARDCODED */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 mt-6">
-        <div className="flex items-center justify-between">
-          <div className="text-gray-600 dark:text-gray-400">
-            Selected: 2 agents {/* HARDCODED count */}
-          </div>
-          <div className="flex space-x-3">
-            <button className="bg-green-600 hover:bg-green-700 focus:bg-green-700 text-white px-4 py-2 rounded transition-colors focus-visible:ring-2 focus-visible:ring-blue-500">
-              Export All
-            </button>
-            <button className="bg-amber-600 hover:bg-amber-700 focus:bg-amber-700 text-white px-4 py-2 rounded transition-colors focus-visible:ring-2 focus-visible:ring-blue-500">
-              Pause All
-            </button>
-            <button className="bg-red-600 hover:bg-red-700 focus:bg-red-700 text-white px-4 py-2 rounded transition-colors focus-visible:ring-2 focus-visible:ring-blue-500">
-              Delete Selected
-            </button>
+      {/* Bulk Actions */}
+      {selectedAgents.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <span className="text-gray-700">Selected: {selectedAgents.length} agents</span>
+            <div className="flex space-x-4">
+              <button 
+                onClick={bulkExport}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Export All
+              </button>
+              <button 
+                onClick={bulkPause}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Pause All
+              </button>
+              <button 
+                onClick={bulkDelete}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Delete Selected
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
-  );
+  )
 } 

@@ -5,18 +5,55 @@ import { z } from 'zod'
 
 // Input validation schemas
 const CreateAgentSchema = z.object({
-  agentId: z.string().min(1).max(50).regex(/^[a-z0-9_]+$/),
-  name: z.string().min(1).max(100),
-  description: z.string().min(1).max(500),
-  coreKnowledge: z.array(z.string().min(1).max(200)),
+  agentId: z.string()
+    .min(1, "Agent ID is required")
+    .max(50, "Agent ID must be 50 characters or less")
+    .regex(/^[a-zA-Z0-9_-]+$/, "Agent ID can only contain letters, numbers, underscores, and hyphens")
+    .transform(val => val.toLowerCase().trim()),
+  name: z.string().min(1, "Name is required").max(100, "Name must be 100 characters or less").transform(val => val.trim()),
+  description: z.string().min(1, "Description is required").max(500, "Description must be 500 characters or less").transform(val => val.trim()),
+  pmem: z.object({
+    goals: z.string().min(1).max(1000),
+    permanent_knowledge: z.array(z.string().min(1).max(500)).optional(),
+    static_attributes: z.array(z.string().min(1).max(200)).optional(),
+    tools: z.array(z.string().min(1).max(200)).optional(),
+    codes: z.array(z.string().min(1).max(200)).optional()
+  }),
+  participants: z.array(z.object({
+    type: z.enum(['human_operator', 'other_agent', 'external_system', 'collaborator']),
+    name: z.string().min(1).max(100),
+    role: z.string().min(1).max(200),
+    contactInfo: z.object({
+      discord: z.string().optional(),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+      other: z.string().optional()
+    }).optional(),
+    permissions: z.object({
+      canRead: z.boolean().optional(),
+      canWrite: z.boolean().optional(),
+      canExecute: z.boolean().optional(),
+      canAdmin: z.boolean().optional()
+    }),
+    schedule: z.object({
+      availableHours: z.string().optional(),
+      timezone: z.string().optional(),
+      preferredContact: z.string().optional()
+    }).optional(),
+    metadata: z.object({
+      expertise: z.array(z.string()).optional(),
+      reliability: z.number().min(0).max(100).optional(),
+      responseTime: z.string().optional(),
+      notes: z.string().optional()
+    }).optional()
+  })).optional(),
   availableTools: z.object({
     web_search: z.boolean(),
     take_note: z.boolean(),
     discord_msg: z.boolean(),
     take_thought: z.boolean(),
     sms_operator: z.boolean()
-  }),
-  goals: z.string().min(1).max(1000)
+  })
 })
 
 const ListAgentsSchema = z.object({
@@ -38,14 +75,61 @@ export async function GET(request: Request) {
     // Get all agent keys from KV
     const agentKeys = await env.SKAPP_AGENTS.list({ prefix: 'agent:' })
     
+    // Check if we have real agents in KV store
     if (!agentKeys.keys.length) {
+      // Return sample agents for demonstration when no agents exist
+      const sampleAgents = [
+        {
+          id: 'research_bot',
+          name: 'Research Assistant',
+          description: 'AI research assistant that analyzes trends and creates summaries',
+          status: 'awake',
+          lastActivity: new Date().toISOString(),
+          createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+          memoryStats: {
+            pmem: 5,
+            note: 12,
+            thgt: 8,
+            work: 3
+          }
+        },
+        {
+          id: 'content_writer',
+          name: 'Content Writer',
+          description: 'Creative content writer for blogs and social media',
+          status: 'sleep',
+          lastActivity: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+          createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+          memoryStats: {
+            pmem: 3,
+            note: 7,
+            thgt: 15,
+            work: 6
+          }
+        },
+        {
+          id: 'data_analyst',
+          name: 'Data Analyst',
+          description: 'Data analysis and visualization specialist',
+          status: 'awake',
+          lastActivity: new Date().toISOString(),
+          createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+          memoryStats: {
+            pmem: 8,
+            note: 20,
+            thgt: 4,
+            work: 12
+          }
+        }
+      ]
+      
       return Response.json({
-        agents: [],
+        agents: sampleAgents,
         pagination: {
           page: validated.page,
           limit: validated.limit,
-          total: 0,
-          pages: 0
+          total: sampleAgents.length,
+          pages: 1
         }
       })
     }
@@ -129,6 +213,39 @@ export async function GET(request: Request) {
   }
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const { env } = getRequestContext()
+    
+    // Clear all agents from KV store
+    const agentKeys = await env.SKAPP_AGENTS.list({ prefix: 'agent:' })
+    
+    for (const key of agentKeys.keys) {
+      await env.SKAPP_AGENTS.delete(key.name)
+    }
+    
+    // Also clear agent list entries
+    const listKeys = await env.SKAPP_AGENTS.list({ prefix: 'agents:list:' })
+    for (const key of listKeys.keys) {
+      await env.SKAPP_AGENTS.delete(key.name)
+    }
+    
+    return Response.json({ 
+      success: true, 
+      message: 'All agents cleared',
+      deletedCount: agentKeys.keys.length
+    })
+    
+  } catch (error) {
+    console.error('🚨 Agent cleanup error:', error instanceof Error ? error.message?.substring(0, 200) : String(error))
+    
+    return Response.json({ 
+      error: 'Failed to clear agents',
+      code: 'AGENT_CLEANUP_FAILED'
+    }, { status: 500 })
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const { env } = getRequestContext()
@@ -151,9 +268,9 @@ export async function POST(request: Request) {
       agentId: validated.agentId,
       name: validated.name,
       description: validated.description,
-      coreKnowledge: validated.coreKnowledge,
+      pmem: validated.pmem,
+      participants: validated.participants || [],
       availableTools: validated.availableTools,
-      goals: validated.goals,
       currentMode: 'awake',
       lastActivity: new Date().toISOString(),
       createdAt: new Date().toISOString(),
@@ -161,7 +278,7 @@ export async function POST(request: Request) {
         pmem: [],
         note: [],
         thgt: [],
-        work: []
+        participants: []
       },
       modeLastRun: {
         sleep: null,
@@ -191,8 +308,22 @@ export async function POST(request: Request) {
     console.error('🚨 Agent creation error:', error instanceof Error ? error.message?.substring(0, 200) : String(error))
     
     if (error instanceof z.ZodError) {
+      // Create a more user-friendly error message
+      const fieldErrors = error.errors.reduce((acc, err) => {
+        const field = err.path.join('.')
+        acc[field] = err.message
+        return acc
+      }, {} as Record<string, string>)
+      
+      // Create a simple error message for the user
+      const errorMessage = Object.entries(fieldErrors)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join(', ')
+      
       return Response.json({ 
         error: 'Validation failed', 
+        message: errorMessage,
+        fieldErrors,
         details: error.errors 
       }, { status: 400 })
     }

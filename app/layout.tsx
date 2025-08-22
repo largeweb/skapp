@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import Navigation from "@/components/Navigation";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "SpawnKit - Persistent AI Agents",
@@ -13,9 +20,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className={inter.variable}>
       <body
-        className="antialiased bg-gray-900 text-gray-100 min-h-screen font-sans"
+        className="antialiased bg-gray-50 text-gray-900 min-h-screen font-sans"
       >
         <Navigation />
         <main className="min-h-screen">
