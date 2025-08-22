@@ -1,6 +1,12 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2024-12-19**: Fixed Windows Compatibility Issues
+  - **🔧 Windows Scripts**: Added Windows-compatible deployment scripts and fixed PowerShell command syntax
+  - **🚀 Deployment Scripts**: Created `deploy-windows.ps1` and `deploy-windows.bat` for easy Windows deployment
+  - **📦 Build Success**: Regular `npm run build` works perfectly on Windows
+  - **🌐 Local Development**: `npm run dev` works without Cloudflare Pages Windows issues
+  - **📋 New Scripts**: Added `dev-windows`, `build-windows`, `preview-windows`, `deploy-win` commands
 - **2024-12-19**: Fixed Cloudflare Pages Deployment Issues
   - **🔧 Edge Runtime**: Added `export const runtime = 'edge'` to all dynamic pages
   - **✅ Build Success**: Fixed deployment failures for `/agents/[id]` and `/agents/[id]/settings` routes

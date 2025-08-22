@@ -12,6 +12,11 @@
 		"pages:build": "npx @cloudflare/next-on-pages",
 		"preview": "npm run pages:build && wrangler pages dev",
 		"deploy": "npm run pages:build && wrangler pages deploy",
+		"dev-windows": "next dev --turbopack",
+		"build-windows": "next build",
+		"preview-windows": "next build && npx serve .next",
+		"deploy-win": "powershell -ExecutionPolicy Bypass -File deploy-windows.ps1",
+		"deploy-win-bat": "deploy-windows.bat",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv ./env.d.ts"
 	},
 	"dependencies": {
@@ -27,6 +32,7 @@
 		"@types/node": "^20.19.11",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
+		"serve": "^14.2.4",
 		"tailwindcss": "^4",
 		"typescript": "^5",
 		"vercel": "^46.0.2",
