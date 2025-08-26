@@ -1,6 +1,23 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2025-01-27**: Enhanced Turn Prompt Generation
+  - **Awake Mode**: Structured prompts for autonomous operation with tool usage, progress assessment, and next-turn planning
+  - **Sleep Mode**: Comprehensive reflection prompts for daily learnings, tomorrow's priorities, and summary generation
+  - **Output Format**: Specific guidance for take_note(), take_thought(), <summary>, <turn-prompt-rationale>, and <turn-prompt> tags
+  - **Tool Integration**: Explicit mention of web_search(), write_discord_msg() and other available tools
+  - **Build Validation**: All changes compile successfully with no TypeScript errors
+- **2025-01-27**: Updated Orchestration API Schedule
+  - **New Schedule**: Awake (5:00-3:00 every 30 min), Sleep (4:00 once daily)
+  - **Previous**: Awake (5:00-1:50 every 30 min), Sleep (2:00 once daily)
+  - **Extended Awake Window**: Agents now stay awake until 3:00 AM instead of 1:50 AM
+  - **Delayed Sleep**: Sleep mode moved from 2:00 AM to 4:00 AM for better timing
+  - **Build Validation**: All changes compile successfully with no TypeScript errors
+- **2025-01-27**: Simplified Orchestration API to 2-Mode System
+  - **Mode Reduction**: Removed `deep_sleep` and `wakeup` modes, keeping only `awake` and `sleep`
+  - **Schedule**: Awake (5:00-1:50 every 30 min), Sleep (2:00 once daily)
+  - **Type Safety**: Updated TypeScript types, Zod schema, and mode determination logic
+  - **Build Validation**: All changes compile successfully with no TypeScript errors
 - **2025-08-22**: Orchestration API implemented per rules
   - **Endpoint**: `POST /api/orchestrate` (edge runtime)
   - **Validation**: Zod schema for body (`agentId`, `mode`, `estTime`)
@@ -167,6 +184,7 @@
 ## 🌟 Project Overview
 SpawnKit is a revolutionary platform for creating persistent AI agents that think, learn, and evolve autonomously. Unlike traditional chatbots, SpawnKit agents have:
 - **30-minute cognitive cycles** that trigger automatically via Cloudflare Workers
+- **Simplified 2-mode system** (awake/sleep) with extended awake window (5:00-3:00) and 4:00 AM sleep
 - **4-layer memory system** (PMEM/NOTE/THGT/WORK) for true persistence
 - **Autonomous tool usage** (Discord, web search, human operator)
 - **Real-time dashboard** for agent management and monitoring
@@ -354,7 +372,7 @@ openai-hackathon/                 # ROOT - All Cursor Composer requests happen h
 ### 🎭 Orchestration API - Readiness Status
 **Development**: ✅ Complete | **Manual Testing**: Not Tested | **Automated Testing**: Not Implemented | **Deployment Ready**: 🔶 Partial
 
-**Description**: Endpoint for skcron worker to trigger agent cycles with mode determination
+**Description**: Endpoint for skcron worker to trigger agent cycles with simplified 2-mode system (awake/sleep)
 
 ### Test Scenarios:
 1. **Happy Path**: Receive cron call → List agents → Determine modes → Process active agents → Return status
@@ -363,14 +381,17 @@ openai-hackathon/                 # ROOT - All Cursor Composer requests happen h
 4. **Single Agent**: `agentId` present orchestrates only that agent
 5. **Forced Mode**: `mode` present forces mode regardless of schedule
 6. **Time Override**: `estTime` provided drives schedule logic deterministically
-7. **Sleep Actions**: Generated text includes `take_note`, `take_thought`, and `<summary>`; entries are persisted via memory API
+7. **Awake Actions**: Generated text includes tool usage suggestions, progress assessment, and next-turn planning with `<turn-prompt-rationale>` and `<turn-prompt>` tags
+8. **Sleep Actions**: Generated text includes `take_note`, `take_thought`, and `<summary>`; entries are persisted via memory API
 
 ### Manual Testing:
 - [ ] POST `/api/orchestrate` with `{ estTime: "2025-01-01T09:00:00.000Z" }` (awake)
-- [ ] POST with `{ estTime: "2025-01-01T07:30:00.000Z" }` (wakeup window)
+- [ ] POST with `{ estTime: "2025-01-01T04:05:00.000Z" }` (sleep window)
+- [ ] POST with `{ estTime: "2025-01-01T03:30:00.000Z" }` (awake at 3:00 AM)
 - [ ] POST with `{ estTime: "2025-01-01T07:00:00.000Z", mode: "sleep" }` (forced mode)
 - [ ] POST with `{ agentId: "test" }` (single agent)
 - [ ] Simulate generation service failure and verify retries/logs
+- [ ] In awake mode, verify tool usage suggestions and next-turn planning are generated
 - [ ] In sleep mode, verify `note` and `thgt` entries created in KV and summary persisted
 - Status: Not Tested
 

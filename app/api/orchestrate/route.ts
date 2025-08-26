@@ -3,7 +3,7 @@ export const runtime = 'edge'
 import { getRequestContext } from '@cloudflare/next-on-pages'
 import { z } from 'zod'
 
-type Mode = 'awake' | 'sleep' | 'deepSleep' | 'wakeup'
+type Mode = 'awake' | 'sleep'
 
 interface AgentRecord {
   agentId?: string
@@ -14,17 +14,14 @@ interface AgentRecord {
   lastActivity?: string
   modeLastRun?: {
     sleep?: string | null
-    deep_sleep?: string | null
-    deepSleep?: string | null
-    wakeup?: string | null
   }
   turnsCount?: number
   lastTurnTriggered?: string
   memory?: {
-    pmem?: unknown[]
-    note?: unknown[]
-    thgt?: unknown[]
-    work?: unknown[]
+    pmem?: string[]
+    note?: string[]
+    thgt?: string[]
+    work?: string[]
   }
   notes?: string[]
   conversationHistory?: { role: 'user' | 'assistant'; content: string; timestamp?: string }[]
@@ -32,7 +29,7 @@ interface AgentRecord {
 
 const OrchestrationRequestSchema = z.object({
   agentId: z.string().min(1).max(100).optional(),
-  mode: z.enum(['awake', 'sleep', 'deepSleep', 'wakeup']).optional(),
+  mode: z.enum(['awake', 'sleep']).optional(),
   estTime: z.string().datetime().optional()
 })
 
@@ -213,27 +210,15 @@ function determineAgentMode(agentId: string, agent: AgentRecord, estTime: Date, 
 
   const last = agent.modeLastRun || {}
   const lastSleep = last.sleep
-  const lastDeep = last.deepSleep ?? last.deep_sleep
-  const lastWake = last.wakeup
 
-  // Wakeup once at/after 4:30
-  if (hour === 4 && minute >= 30) {
-    if (lastWake !== today) return 'wakeup'
-  }
-
-  // Awake window 5:00 - 1:50
-  if ((hour === 5 && minute >= 0) || (hour >= 6 && hour <= 23) || hour === 0 || (hour === 1 && minute <= 50)) {
+  // Awake window 5:00 - 3:00
+  if ((hour === 5 && minute >= 0) || (hour >= 6 && hour <= 23) || hour === 0 || hour === 1 || hour === 2 || (hour === 3 && minute === 0)) {
     return 'awake'
   }
 
-  // Sleep once around 2:00
-  if (hour === 2 && minute >= 0 && minute < 10) {
+  // Sleep once around 4:00
+  if (hour === 4 && minute >= 0 && minute < 10) {
     if (lastSleep !== today) return 'sleep'
-  }
-
-  // Deep sleep once around 3:00
-  if (hour === 3 && minute >= 0 && minute < 10) {
-    if (lastDeep !== today) return 'deepSleep'
   }
 
   return null
@@ -271,17 +256,25 @@ function generateTurnPrompt(mode: Mode, estTime: Date): string {
   const timeStr = estTime.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: true, hour: 'numeric', minute: '2-digit' })
   switch (mode) {
     case 'awake':
-      if (hour >= 5 && hour < 8) return `It's ${timeStr} EST. Top priority first — what is it?`
-      if (hour >= 8 && hour < 12) return `Peak focus at ${timeStr} EST. What progress can you make now?`
-      if (hour >= 12 && hour < 17) return `Midday ${timeStr} EST. What are you advancing or analyzing?`
-      if (hour >= 17 && hour < 21) return `Evening ${timeStr} EST. Plan, reflect, or finalize next steps.`
-      return `Night ${timeStr} EST. Share your current focus or insights.`
+      return `It's ${timeStr} EST. Continue your autonomous operation and pursue your goals.
+
+Generate the next chunk of text that includes:
+- Current progress assessment and remaining goals
+- Tool usage suggestions (web_search(), write_discord_msg(), etc.)
+- Next immediate actions and priorities
+- Remember: thoughts in system prompt expire today, prioritize accordingly
+
+Include a <turn-prompt-rationale> explaining your reasoning and a <turn-prompt> for the next turn.`
     case 'sleep':
-      return 'Reflect on recent progress. What worked, what didn\'t, and what will you change?'
-    case 'deepSleep':
-      return 'Analyze major patterns in your behavior and results. Identify fundamental improvements.'
-    case 'wakeup':
-      return 'Good morning! Set your top intentions and concrete goals for today.'
+      return `It's ${timeStr} EST. Reflect on today's activities and prepare for tomorrow.
+
+Generate a comprehensive summary including:
+- Key learnings and insights from the day
+- Important immediate actions for tomorrow
+- Strategic priorities and patterns observed
+
+Use take_note() for important learnings and take_thought() for tomorrow's focus items.
+Include a <summary> tag with a concise summary for the next day's conversation history.`
   }
 }
 
