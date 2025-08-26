@@ -36,7 +36,9 @@ export async function POST(
     const memoryContext = await buildMemoryContext(env, id)
     
     // Build system prompt with agent context
+    console.log('memoryContext', memoryContext)
     const systemPrompt = buildSystemPrompt(agent, memoryContext)
+    console.log('systemPrompt', systemPrompt)
     
     // Prepare conversation for Groq API
     const messages = [
@@ -205,19 +207,60 @@ async function buildMemoryContext(env: any, agentId: string): Promise<string> {
 }
 
 function buildSystemPrompt(agent: any, memoryContext: string): string {
+  console.log("agent", agent)
+  
+  // Extract goals from pmem object
+  const goals = agent.pmem?.goals || 'No specific goals defined'
+  
+  // Extract permanent knowledge from pmem object
+  const permanentKnowledge = agent.pmem?.permanent_knowledge || []
+  const coreKnowledgeText = permanentKnowledge.length > 0 
+    ? permanentKnowledge.map((k: string) => `- ${k}`).join('\n')
+    : 'No core knowledge defined'
+  
+  // Extract static attributes from pmem object
+  const staticAttributes = agent.pmem?.static_attributes || []
+  const attributesText = staticAttributes.length > 0
+    ? staticAttributes.map((attr: string) => `- ${attr}`).join('\n')
+    : 'No specific attributes defined'
+  
+  // Extract tools from pmem object
+  const pmemTools = agent.pmem?.tools || []
+  const pmemToolsText = pmemTools.length > 0
+    ? pmemTools.map((tool: string) => `- ${tool}`).join('\n')
+    : 'No permanent tools defined'
+  
+  // Get available tools from top-level availableTools object
+  const availableToolsText = Object.entries(agent.availableTools || {})
+    .filter(([_, enabled]) => enabled)
+    .map(([tool, _]) => `- ${tool}`)
+    .join('\n') || 'No tools available'
+  
+  // Extract participants information
+  const participants = agent.participants || []
+  const participantsText = participants.length > 0
+    ? participants.map((p: any) => `- ${p.name} (${p.role}): ${p.type}`).join('\n')
+    : 'No participants defined'
+  
   return `You are ${agent.name}, a ${agent.description}.
 
-Core Knowledge:
-${agent.coreKnowledge.map((k: string) => `- ${k}`).join('\n')}
-
 Goals:
-${agent.goals}
+${goals}
+
+Core Knowledge:
+${coreKnowledgeText}
+
+Static Attributes:
+${attributesText}
+
+Permanent Tools:
+${pmemToolsText}
 
 Available Tools:
-${Object.entries(agent.availableTools)
-  .filter(([_, enabled]) => enabled)
-  .map(([tool, _]) => `- ${tool}`)
-  .join('\n')}
+${availableToolsText}
+
+Participants:
+${participantsText}
 
 Recent Memory Context:
 ${memoryContext}

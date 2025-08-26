@@ -50,7 +50,7 @@ export async function GET(
     csvContent += `Last Activity,${agent.lastActivity}\n`
     csvContent += `Created At,${agent.createdAt}\n`
     csvContent += `Updated At,${agent.updatedAt}\n`
-    csvContent += `Goals,${agent.goals || ''}\n`
+    csvContent += `Goals,${agent.pmem?.goals || ''}\n`
     csvContent += `Notes,${agent.notes || ''}\n`
     csvContent += `Thoughts,${agent.thoughts || ''}\n`
     csvContent += '\n'
@@ -66,7 +66,7 @@ export async function GET(
     // Core Knowledge
     csvContent += 'Core Knowledge\n'
     csvContent += 'Knowledge Item\n'
-    agent.coreKnowledge?.forEach((knowledge: string) => {
+    agent.pmem?.permanent_knowledge?.forEach((knowledge: string) => {
       csvContent += `${knowledge}\n`
     })
     csvContent += '\n'
@@ -76,15 +76,22 @@ export async function GET(
     csvContent += 'Content\n'
     const systemPrompt = `You are ${agent.name}, ${agent.description || ''}.
 
+Goals:
+${agent.pmem?.goals || ''}
+
 Core Knowledge:
-${agent.coreKnowledge?.map((k: string) => `• ${k}`).join('\n') || ''}
+${agent.pmem?.permanent_knowledge?.map((k: string) => `• ${k}`).join('\n') || ''}
+
+Static Attributes:
+${agent.pmem?.static_attributes?.map((attr: string) => `• ${attr}`).join('\n') || ''}
+
+Permanent Tools:
+${agent.pmem?.tools?.map((tool: string) => `• ${tool}`).join('\n') || ''}
 
 Available Tools: ${Object.entries(agent.availableTools || {})
   .filter(([_, enabled]) => enabled)
   .map(([tool, _]) => tool)
-  .join(', ')}
-
-Goals: ${agent.goals || ''}`
+  .join(', ')}`
     csvContent += `${systemPrompt}\n`
     csvContent += '\n\n'
     

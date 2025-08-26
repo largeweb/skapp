@@ -1,6 +1,12 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2025-01-27**: Fixed Agent Data Structure Compatibility
+  - **Chat API**: Updated buildSystemPrompt function to work with new agent data structure (pmem object with nested properties)
+  - **Export API**: Fixed export route to use correct agent.pmem.goals and agent.pmem.permanent_knowledge paths
+  - **Data Structure**: Now properly handles agent.pmem.goals, agent.pmem.permanent_knowledge, agent.pmem.static_attributes, agent.pmem.tools
+  - **Participants**: Added support for agent.participants array in system prompt generation
+  - **Build Validation**: All changes compile successfully with no TypeScript errors
 - **2025-01-27**: Enhanced Turn Prompt Generation
   - **Awake Mode**: Structured prompts for autonomous operation with tool usage, progress assessment, and next-turn planning
   - **Sleep Mode**: Comprehensive reflection prompts for daily learnings, tomorrow's priorities, and summary generation
