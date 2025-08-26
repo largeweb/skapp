@@ -1,6 +1,15 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2025-08-22**: Orchestration API implemented per rules
+  - **Endpoint**: `POST /api/orchestrate` (edge runtime)
+  - **Validation**: Zod schema for body (`agentId`, `mode`, `estTime`)
+  - **EST Logic**: Accurate EST/EDT conversion and mode determination
+  - **KV**: Uses `env.SKAPP_AGENTS` with `agent:` prefix
+  - **Resilience**: Per-agent try/catch, retries with backoff, minimal tracking updates
+  - **Logging**: Clear start/end, per-agent mode and status, execution timing
+  - **Mode Actions**: Sleep parses output for `take_note(...)`, `take_thought(...)`, `<summary>...</summary>` and persists via `/api/agents/[id]/memory`
+  - **Agent Update**: Updates `lastActivity` via `PUT /api/agents/[id]`
 - **2024-12-19**: Agent Settings Memory Structure - Single Column with Prefixed Line Items
   - **🧠 PMEM Structure**: Single column with prefixed line items (Permanent Goals:, Permanent Communication Style:, etc.)
   - **📝 Notes Structure**: Single column with prefixed line items (Goals:, Temporary Communication Style:, Recent Thoughts:, etc.)
@@ -343,7 +352,7 @@ openai-hackathon/                 # ROOT - All Cursor Composer requests happen h
 ---
 
 ### 🎭 Orchestration API - Readiness Status
-**Development**: Not Started | **Manual Testing**: Not Tested | **Automated Testing**: Not Implemented | **Deployment Ready**: No
+**Development**: ✅ Complete | **Manual Testing**: Not Tested | **Automated Testing**: Not Implemented | **Deployment Ready**: 🔶 Partial
 
 **Description**: Endpoint for skcron worker to trigger agent cycles with mode determination
 
@@ -351,12 +360,18 @@ openai-hackathon/                 # ROOT - All Cursor Composer requests happen h
 1. **Happy Path**: Receive cron call → List agents → Determine modes → Process active agents → Return status
 2. **Edge Cases**: No agents, all agents skipped, partial failures, large agent counts
 3. **Error Handling**: KV failures, AI API errors, timeout handling, invalid payloads
+4. **Single Agent**: `agentId` present orchestrates only that agent
+5. **Forced Mode**: `mode` present forces mode regardless of schedule
+6. **Time Override**: `estTime` provided drives schedule logic deterministically
+7. **Sleep Actions**: Generated text includes `take_note`, `take_thought`, and `<summary>`; entries are persisted via memory API
 
 ### Manual Testing:
-- [ ] Call orchestration API with EST time
-- [ ] Verify correct mode determination for each agent
-- [ ] Test with various times (awake/sleep/deep_sleep/wakeup)
-- [ ] Handle partial failures gracefully
+- [ ] POST `/api/orchestrate` with `{ estTime: "2025-01-01T09:00:00.000Z" }` (awake)
+- [ ] POST with `{ estTime: "2025-01-01T07:30:00.000Z" }` (wakeup window)
+- [ ] POST with `{ estTime: "2025-01-01T07:00:00.000Z", mode: "sleep" }` (forced mode)
+- [ ] POST with `{ agentId: "test" }` (single agent)
+- [ ] Simulate generation service failure and verify retries/logs
+- [ ] In sleep mode, verify `note` and `thgt` entries created in KV and summary persisted
 - Status: Not Tested
 
 ### Automated Testing:
