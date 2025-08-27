@@ -17,14 +17,17 @@ interface AgentRecord {
   }
   turnsCount?: number
   lastTurnTriggered?: string
-  memory?: {
-    pmem?: string[]
-    note?: string[]
-    thgt?: string[]
-    work?: string[]
-  }
-  notes?: string[]
-  conversationHistory?: { role: 'user' | 'assistant'; content: string; timestamp?: string }[]
+  pmem?: string[]
+  note?: string[]
+  thgt?: string[]
+  tools?: string[]
+  turn_prompt?: string
+  turn_history?: Array<{
+    role: 'user' | 'model'
+    parts: Array<{
+      text: string
+    }>
+  }>
 }
 
 const OrchestrationRequestSchema = z.object({
@@ -71,6 +74,7 @@ export async function POST(request: Request) {
 
     for (const key of agentKeys) {
       const agentId = key.replace(/^agent:/, '')
+      console.log(`🎯 Agent: ${agentId}`)
       const loopStart = Date.now()
       try {
         const raw = await env.SKAPP_AGENTS.get(key)
@@ -94,6 +98,7 @@ export async function POST(request: Request) {
 
         // Prepare minimal, mode-aware payload
         const payload = preparePayload(agentId, agent, mode, estTime)
+        console.log(`🔍 Payload: ${JSON.stringify(payload)}`)
 
         // Update lightweight tracking (non-critical)
         try {
@@ -234,10 +239,25 @@ ${agent.description || 'No description provided.'}
 It's ${timeStr} EST.
 
 ## Memory Snapshot
-PMEM: ${(agent.memory?.pmem?.length || 0)} | NOTE: ${(agent.memory?.note?.length || 0)} | THGT: ${(agent.memory?.thgt?.length || 0)} | WORK: ${(agent.memory?.work?.length || 0)}
+PMEM: ${(agent.pmem?.length || 0)} | NOTE: ${(agent.note?.length || 0)} | THGT: ${(agent.thgt?.length || 0)} | TOOLS: ${(agent.tools?.length || 0)}
 `
 
-  const conversationHistory = Array.isArray(agent.conversationHistory) ? agent.conversationHistory.slice(-20) : []
+  // Convert turn_history to conversationHistory format for compatibility
+  const conversationHistory: { role: 'user' | 'assistant'; content: string; timestamp?: string }[] = []
+  if (Array.isArray(agent.turn_history)) {
+    agent.turn_history.slice(-20).forEach((turn) => {
+      const content = turn.parts?.map(part => part.text).join(' ') || ''
+      if (content.trim()) {
+        conversationHistory.push({
+          role: turn.role === 'model' ? 'assistant' : 'user',
+          content: content,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+  }
+
+  // Remove incomplete conversation pairs
   if (conversationHistory.length && conversationHistory[conversationHistory.length - 1].role === 'user') {
     conversationHistory.pop()
   }

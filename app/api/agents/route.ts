@@ -12,13 +12,17 @@ const CreateAgentSchema = z.object({
     .transform(val => val.toLowerCase().trim()),
   name: z.string().min(1, "Name is required").max(100, "Name must be 100 characters or less").transform(val => val.trim()),
   description: z.string().min(1, "Description is required").max(500, "Description must be 500 characters or less").transform(val => val.trim()),
-  pmem: z.object({
-    goals: z.string().min(1).max(1000),
-    permanent_knowledge: z.array(z.string().min(1).max(500)).optional(),
-    static_attributes: z.array(z.string().min(1).max(200)).optional(),
-    tools: z.array(z.string().min(1).max(200)).optional(),
-    codes: z.array(z.string().min(1).max(200)).optional()
-  }),
+  pmem: z.array(z.string().min(1).max(1000)).optional().default([]),
+  note: z.array(z.string().min(1).max(1000)).optional().default([]),
+  thgt: z.array(z.string().min(1).max(1000)).optional().default([]),
+  tools: z.array(z.string().min(1).max(200)).optional().default([]),
+  turn_prompt: z.string().optional().default(""),
+  turn_history: z.array(z.object({
+    role: z.enum(['user', 'model']),
+    parts: z.array(z.object({
+      text: z.string().min(1)
+    }))
+  })).optional().default([]),
   participants: z.array(z.object({
     type: z.enum(['human_operator', 'other_agent', 'external_system', 'collaborator']),
     name: z.string().min(1).max(100),
@@ -46,14 +50,7 @@ const CreateAgentSchema = z.object({
       responseTime: z.string().optional(),
       notes: z.string().optional()
     }).optional()
-  })).optional(),
-  availableTools: z.object({
-    web_search: z.boolean(),
-    take_note: z.boolean(),
-    discord_msg: z.boolean(),
-    take_thought: z.boolean(),
-    sms_operator: z.boolean()
-  })
+  })).optional().default([]),
 })
 
 const ListAgentsSchema = z.object({
@@ -169,10 +166,10 @@ export async function GET(request: Request) {
             lastActivity: agent.lastActivity || 'Unknown',
             createdAt: agent.createdAt,
             memoryStats: {
-              pmem: agent.memory?.pmem?.length || 0,
-              note: agent.memory?.note?.length || 0,
-              thgt: agent.memory?.thgt?.length || 0,
-              work: agent.memory?.work?.length || 0
+              pmem: agent.pmem?.length || 0,
+              note: agent.note?.length || 0,
+              thgt: agent.thgt?.length || 0,
+              tools: agent.tools?.length || 0
             }
           })
         }
@@ -263,27 +260,24 @@ export async function POST(request: Request) {
       }, { status: 409 })
     }
     
-    // Create agent data structure
+    // Create agent data structure with new simplified format
     const agentData = {
       agentId: validated.agentId,
       name: validated.name,
       description: validated.description,
-      pmem: validated.pmem,
+      pmem: validated.pmem || [],
+      note: validated.note || [],
+      thgt: validated.thgt || [],
+      tools: validated.tools || [],
+      turn_prompt: validated.turn_prompt || "",
+      turn_history: validated.turn_history || [],
       participants: validated.participants || [],
-      availableTools: validated.availableTools,
       currentMode: 'awake',
       lastActivity: new Date().toISOString(),
       createdAt: new Date().toISOString(),
-      memory: {
-        pmem: [],
-        note: [],
-        thgt: [],
-        participants: []
-      },
       modeLastRun: {
         sleep: null,
-        deep_sleep: null,
-        wakeup: null
+        awake: null
       }
     }
     

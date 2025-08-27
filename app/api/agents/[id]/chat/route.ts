@@ -34,6 +34,8 @@ export async function POST(
     
     // Fetch recent memory context
     const memoryContext = await buildMemoryContext(env, id)
+
+    console.log("env=========>", env.GROQ_API_KEY)
     
     // Build system prompt with agent context
     console.log('memoryContext', memoryContext)

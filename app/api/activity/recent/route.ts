@@ -130,8 +130,8 @@ export async function GET(request: NextRequest) {
           }
           
           // Add recent notes
-          if (agent.memory?.note) {
-            const recentNotes = agent.memory.note
+          if (agent.note) {
+            const recentNotes = agent.note
               .filter((note: any) => {
                 const noteTime = new Date(note.createdAt || note.timestamp)
                 const timeDiff = now.getTime() - noteTime.getTime()
@@ -158,8 +158,8 @@ export async function GET(request: NextRequest) {
           }
           
           // Add recent thoughts
-          if (agent.memory?.thgt) {
-            const recentThoughts = agent.memory.thgt
+          if (agent.thgt) {
+            const recentThoughts = agent.thgt
               .filter((thought: any) => {
                 const thoughtTime = new Date(thought.createdAt || thought.timestamp)
                 const timeDiff = now.getTime() - thoughtTime.getTime()
@@ -186,8 +186,8 @@ export async function GET(request: NextRequest) {
           }
           
           // Add recent tool usage
-          if (agent.memory?.work) {
-            const recentWork = agent.memory.work
+          if (agent.tools) {
+            const recentTools = agent.tools
               .filter((work: any) => {
                 const workTime = new Date(work.createdAt || work.timestamp)
                 const timeDiff = now.getTime() - workTime.getTime()
@@ -195,7 +195,7 @@ export async function GET(request: NextRequest) {
               })
               .slice(0, 3) // Limit to 3 most recent work items
             
-            recentWork.forEach((work: any, index: number) => {
+            recentTools.forEach((work: any, index: number) => {
               const workTime = new Date(work.createdAt || work.timestamp)
               const timeDiff = now.getTime() - workTime.getTime()
               const timeDiffMins = Math.floor(timeDiff / (1000 * 60))

@@ -147,14 +147,14 @@ Available Tools: ${Object.entries(agent.availableTools || {})
     csvContent += '=== CONVERSATION HISTORY ===\n'
     csvContent += 'Role,Content,Timestamp\n'
     
-    // Get conversation history from memory or create placeholder
-    const conversationHistory = agent.conversationHistory || []
-    if (Array.isArray(conversationHistory)) {
-      conversationHistory.forEach((msg: any) => {
-        const role = msg.role || 'unknown'
-        const content = (msg.content || '').replace(/"/g, '""')
-        const timestamp = msg.timestamp || ''
-        csvContent += `"${role}","${content}","${timestamp}"\n`
+    // Get conversation history from turn_history or create placeholder
+    const turnHistory = agent.turn_history || []
+    if (Array.isArray(turnHistory)) {
+      turnHistory.forEach((turn: any) => {
+        const role = turn.role === 'model' ? 'assistant' : turn.role || 'unknown'
+        const content = turn.parts?.map((part: any) => part.text).join(' ') || ''
+        const timestamp = new Date().toISOString() // Use current timestamp as fallback
+        csvContent += `"${role}","${content.replace(/"/g, '""')}","${timestamp}"\n`
       })
     } else {
       csvContent += '"system","No conversation history available",""\n'

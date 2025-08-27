@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
           }
           
           // Count notes from today
-          if (agent.memory?.note) {
-            const todayNotes = agent.memory.note.filter((note: any) => {
+          if (agent.note) {
+            const todayNotes = agent.note.filter((note: any) => {
               const noteDate = new Date(note.createdAt || note.timestamp).toISOString().split('T')[0]
               return noteDate === today
             })
@@ -62,12 +62,12 @@ export async function GET(request: NextRequest) {
           }
           
           // Count tools executed today
-          if (agent.memory?.work) {
-            const todayWork = agent.memory.work.filter((work: any) => {
-              const workDate = new Date(work.createdAt || work.timestamp).toISOString().split('T')[0]
-              return workDate === today
+          if (agent.tools) {
+            const todayTools = agent.tools.filter((tool: any) => {
+              const toolDate = new Date(tool.createdAt || tool.timestamp).toISOString().split('T')[0]
+              return toolDate === today
             })
-            toolsExecuted += todayWork.length
+            toolsExecuted += todayTools.length
           }
           
           // Track last activity time

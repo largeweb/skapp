@@ -1,6 +1,25 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2025-01-27**: Updated Agent Creation API for New Data Structure
+  - **Validation Schema**: Updated CreateAgentSchema to use simplified flat structure with direct arrays
+  - **Agent Data Creation**: Updated agentData structure to use pmem, note, thgt, tools arrays and turn_history
+  - **Default Values**: Added proper default values for all optional fields (empty arrays, empty strings)
+  - **Mode Last Run**: Simplified to only track sleep mode (removed deep_sleep and wakeup)
+  - **Build Validation**: Agent creation API now creates agents with correct data structure
+- **2025-01-27**: Updated All API Routes for New Agent Data Structure
+  - **Agents List API**: Updated memoryStats to use direct agent.pmem, agent.note, agent.thgt, agent.tools arrays
+  - **Stats API**: Updated to count notes and tools from direct arrays instead of nested memory object
+  - **Activity API**: Updated to process notes, thoughts, and tools from direct arrays
+  - **Recent Activity API**: Updated to fetch recent activities from direct arrays
+  - **Export API**: Updated to handle turn_history with role/parts structure instead of conversationHistory
+  - **Build Validation**: All API routes compile successfully with no TypeScript errors
+- **2025-01-27**: Updated Agent Data Structure for Orchestration
+  - **Simplified Structure**: Changed from nested memory object to flat structure with direct pmem, note, thgt, tools arrays
+  - **Turn History**: Updated to use turn_history array with role/parts structure instead of conversationHistory
+  - **Memory Access**: Direct access to agent.pmem, agent.note, agent.thgt, agent.tools arrays
+  - **Conversation Format**: Convert turn_history to conversationHistory format for compatibility with existing systems
+  - **Build Validation**: All changes compile successfully with no TypeScript errors
 - **2025-01-27**: Fixed Agent Data Structure Compatibility
   - **Chat API**: Updated buildSystemPrompt function to work with new agent data structure (pmem object with nested properties)
   - **Export API**: Fixed export route to use correct agent.pmem.goals and agent.pmem.permanent_knowledge paths

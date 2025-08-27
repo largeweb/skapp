@@ -69,8 +69,8 @@ export async function GET(
     }
     
     // Add notes with full content
-    if (agent.memory?.note) {
-      agent.memory.note
+    if (agent.note) {
+      agent.note
         .filter((note: any) => {
           const noteTime = new Date(note.createdAt || note.timestamp)
           return noteTime >= startDate
@@ -100,8 +100,8 @@ export async function GET(
     }
     
     // Add thoughts with full content
-    if (agent.memory?.thgt) {
-      agent.memory.thgt
+    if (agent.thgt) {
+      agent.thgt
         .filter((thought: any) => {
           const thoughtTime = new Date(thought.createdAt || thought.timestamp)
           return thoughtTime >= startDate
@@ -131,8 +131,8 @@ export async function GET(
     }
     
     // Add tool usage with full responses
-    if (agent.memory?.work) {
-      agent.memory.work
+    if (agent.tools) {
+      agent.tools
         .filter((work: any) => {
           const workTime = new Date(work.createdAt || work.timestamp)
           return workTime >= startDate
