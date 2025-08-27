@@ -40,64 +40,30 @@ export async function POST(
     
     const agent = JSON.parse(agentData)
     
-    // Convert turnHistory to conversation format for Groq API
-    const messages = [
-      { role: 'system', content: validated.systemPrompt }
-    ]
-    
-    // Add turn history as conversation
-    validated.turnHistory.forEach((turn) => {
-      const content = turn.parts.map(part => part.text).join(' ')
-      if (content.trim()) {
-        messages.push({
-          role: turn.role === 'model' ? 'assistant' : 'user',
-          content: content
-        })
-      }
-    })
-    
-    // Add current turn prompt as user message
-    messages.push({ role: 'user', content: validated.turnPrompt })
-    
-    // Call Groq API
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: env.GROQ_MODEL || 'openai/gpt-oss-120b',
-        messages,
-        max_tokens: 2000,
-        temperature: 0.7
-      })
-    })
-    
-    if (!groqResponse.ok) {
-      const errorData = await groqResponse.text()
-      console.error('Groq API error:', errorData)
-      throw new Error(`Groq API error: ${groqResponse.status}`)
+    // Handle different modes with optimized paths
+    if (validated.mode === 'sleep') {
+      // Sleep mode: summarize history first, then generate response
+      await handleSleepMode(env, agent, id, validated)
+    } else {
+      // Awake mode: normal generation flow
+      await handleAwakeMode(env, agent, id, validated)
     }
     
-    const response = await groqResponse.json() as any
-    const generatedContent = response.choices[0]?.message?.content || 'No response generated'
-    
-    // Add the generated response to agent's turn history
-    const newTurn = {
-      role: 'model' as const,
-      parts: [{ text: generatedContent }]
+    // Get the appropriate content based on mode
+    let content: string
+    if (validated.mode === 'sleep') {
+      // For sleep mode, return the summary content or a message
+      const latestTurn = agent.turn_history?.[agent.turn_history.length - 1]
+      content = latestTurn?.parts?.[0]?.text || 'History summarized successfully'
+    } else {
+      // For awake mode, return the generated content
+      const latestTurn = agent.turn_history?.[agent.turn_history.length - 1]
+      content = latestTurn?.parts?.[0]?.text || 'No response generated'
     }
-    
-    agent.turn_history = agent.turn_history || []
-    agent.turn_history.push(newTurn)
-    
-    // Update agent in KV
-    await env.SKAPP_AGENTS.put(`agent:${id}`, JSON.stringify(agent))
     
     return Response.json({
       success: true,
-      content: generatedContent,
+      content: content,
       agentId: id,
       mode: validated.mode
     }, {
@@ -122,3 +88,143 @@ export async function POST(
     }, { status: 500 })
   }
 }
+
+async function handleAwakeMode(env: any, agent: any, agentId: string, validated: any) {
+  // Convert turnHistory to conversation format for Groq API
+  const messages = [
+    { role: 'system', content: validated.systemPrompt }
+  ]
+  
+  // Add turn history as conversation
+  validated.turnHistory.forEach((turn: any) => {
+    const content = turn.parts.map((part: any) => part.text).join(' ')
+    if (content.trim()) {
+      messages.push({
+        role: turn.role === 'model' ? 'assistant' : 'user',
+        content: content
+      })
+    }
+  })
+  
+  // Add current turn prompt as user message
+  messages.push({ role: 'user', content: validated.turnPrompt })
+  
+  // Call Groq API
+  const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: env.GROQ_MODEL || 'openai/gpt-oss-120b',
+      messages,
+      max_tokens: 2000,
+      temperature: 0.7
+    })
+  })
+  
+  if (!groqResponse.ok) {
+    const errorData = await groqResponse.text()
+    console.error('Groq API error:', errorData)
+    throw new Error(`Groq API error: ${groqResponse.status}`)
+  }
+  
+  const response = await groqResponse.json() as any
+  const generatedContent = response.choices[0]?.message?.content || 'No response generated'
+  
+  // Add the generated response to agent's turn history
+  const newTurn = {
+    role: 'model' as const,
+    parts: [{ text: generatedContent }]
+  }
+  
+  agent.turn_history = agent.turn_history || []
+  agent.turn_history.push(newTurn)
+  
+  // Update agent in KV
+  await env.SKAPP_AGENTS.put(`agent:${agentId}`, JSON.stringify(agent))
+}
+
+async function handleSleepMode(env: any, agent: any, agentId: string, validated: any) {
+  // For sleep mode, just summarize the existing history
+  await summarizeHistory(env, agent, agentId)
+  
+  // Update agent in KV with summarized history
+  await env.SKAPP_AGENTS.put(`agent:${agentId}`, JSON.stringify(agent))
+}
+
+async function summarizeHistory(env: any, agent: any, agentId: string) {
+  try {
+    const currentHistory = agent.turn_history || []
+    
+    if (currentHistory.length <= 10) {
+      // If history is already short, no need to summarize
+      return
+    }
+    
+    // Create a summary of the full history using Groq API
+    const fullHistoryText = currentHistory.map((turn: any) => {
+      const content = turn.parts.map((part: any) => part.text).join(' ')
+      return `${turn.role}: ${content}`
+    }).join('\n\n')
+    
+    // Call Groq API to create a summary
+    const summaryResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: env.GROQ_MODEL || 'openai/gpt-oss-120b',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that creates concise summaries of conversation history. Focus on key insights, important decisions, and notable patterns.'
+          },
+          {
+            role: 'user',
+            content: `Please create a concise summary of this conversation history, focusing on the most important points:\n\n${fullHistoryText}`
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.3
+      })
+    })
+    
+    if (summaryResponse.ok) {
+      const summaryData = await summaryResponse.json() as any
+      const summary = summaryData.choices[0]?.message?.content
+      
+      if (summary) {
+        // Keep latest 10 turns and add summary content with user role
+        const last10Turns = currentHistory.slice(-10)
+        agent.turn_history = [
+          ...last10Turns,
+          {
+            role: 'user' as const,
+            parts: [{ text: 'Please summarize the conversation history' }]
+          },
+          {
+            role: 'model' as const,
+            parts: [{ text: summary }]
+          }
+        ]
+        
+        console.log(`📝 Sleep mode: Summarized ${currentHistory.length} turns, kept last 10 + summary for agent ${agentId}`)
+      } else {
+        // Skip updating agent data if no summary content, keep original history
+        console.log(`⚠️ Sleep mode: No summary content received, keeping original history for agent ${agentId}`)
+      }
+    } else {
+      // Fallback: keep original history unchanged
+      console.log(`⚠️ Sleep mode: Summary API failed, keeping original history for agent ${agentId}`)
+    }
+  } catch (error) {
+    console.error(`🚨 Sleep mode summarization error for agent ${agentId}:`, error)
+    // Keep existing history on error
+  }
+}
+
+

@@ -1,6 +1,27 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2025-01-27**: Enhanced Sleep Mode History Management
+  - **Improved History Preservation**: Keep latest 10 turns + summary instead of replacing all history
+  - **User Role Addition**: Add user role entry "Please summarize the conversation history" before summary
+  - **Better Context Retention**: Maintain recent conversation context while adding summarized insights
+  - **Robust Error Handling**: Keep original history unchanged if summarization fails or returns no content
+  - **Enhanced Logging**: More detailed logging for different scenarios (success, no content, API failure)
+  - **Context Continuity**: Agents maintain recent context while gaining summarized historical insights
+- **2025-01-27**: Generate API Sleep Mode Simplification & Error Handling
+  - **Sleep Mode Simplification**: Now only summarizes history without generating new response
+  - **Summary Data Validation**: Skip agent update if no summary content received from Groq API
+  - **Simplified Sleep Flow**: handleSleepMode() only calls summarizeHistory() and updates KV
+  - **Mode-Specific Response**: Different response content handling for awake vs sleep modes
+  - **Error Prevention**: Prevents empty or invalid summary data from corrupting agent state
+  - **Clean Separation**: Awake mode generates responses, sleep mode only summarizes history
+- **2025-01-27**: Generate API Optimization with Mode-Specific Paths
+  - **Mode-Based Optimization**: Check mode first, then take different optimized paths for awake vs sleep
+  - **Awake Mode Path**: Normal generation flow with full turn history and direct response generation
+  - **Sleep Mode Path**: First summarize history, then generate response with summarized context
+  - **Separated Functions**: handleAwakeMode(), handleSleepMode(), summarizeHistory() for clean separation
+  - **Efficient Summarization**: Only summarize if history > 10 turns, otherwise keep existing history
+  - **Optimized Flow**: Eliminates unnecessary processing by determining path early in the function
 - **2025-01-27**: Orchestrate Function Optimization & Generate Route
   - **Mode Determination Optimization**: Moved mode determination before agent fetching (all agents use same mode)
   - **Simplified Mode Logic**: Time >= 5:00 = awake, otherwise = sleep (removed per-agent mode determination)
