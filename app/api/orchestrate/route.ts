@@ -54,6 +54,10 @@ export async function POST(request: Request) {
     const today = estTime.toISOString().slice(0, 10)
     console.log(`🌍 Orchestration time: UTC ${now.toISOString()} → EST ${estTime.toISOString()}`)
 
+    // Determine mode for all agents (simplified: time >= 5:00 = awake, otherwise sleep)
+    const mode = body.data.mode || (estTime.getHours() >= 5 ? 'awake' : 'sleep')
+    console.log(`🎭 Determined mode: ${mode} for all agents`)
+
     // Determine agents to process
     let agentKeys: string[] = []
     if (body.data.agentId) {
@@ -87,29 +91,13 @@ export async function POST(request: Request) {
 
         const agent = JSON.parse(raw) as AgentRecord
 
-        const mode = body.data.mode || determineAgentMode(agentId, agent, estTime, today)
-        if (!mode) {
-          skipped++
-          results.push({ agentId, status: 'skipped', reason: 'No active mode' })
-          continue
-        }
-
         console.log(`⚡ Agent '${agentId}' → mode '${mode}'`)
 
         // Prepare minimal, mode-aware payload
         const payload = preparePayload(agentId, agent, mode, estTime)
         console.log(`🔍 Payload: ${JSON.stringify(payload)}`)
 
-        // Update lightweight tracking (non-critical)
-        try {
-          agent.turnsCount = (agent.turnsCount || 0) + 1
-          agent.lastTurnTriggered = estTime.toISOString()
-          await env.SKAPP_AGENTS.put(`agent:${agentId}`, JSON.stringify(agent))
-        } catch (e) {
-          console.warn(`📝 Tracking update failed for '${agentId}':`, e)
-        }
-
-        const { ok, content } = await callSpawnkitGen(payload)
+        const { ok, content } = await callSpawnkitGen(env, agentId, payload, estTime)
         if (!ok) {
           failed++
           results.push({ agentId, status: 'failed', mode, ms: Date.now() - loopStart })
@@ -209,100 +197,47 @@ function isDaylightSavingTime(date: Date): boolean {
   return date >= dstStart && date < dstEnd
 }
 
-function determineAgentMode(agentId: string, agent: AgentRecord, estTime: Date, today: string): Mode | null {
-  const hour = estTime.getHours()
-  const minute = estTime.getMinutes()
 
-  const last = agent.modeLastRun || {}
-  const lastSleep = last.sleep
-
-  // Awake window 5:00 - 3:00
-  if ((hour === 5 && minute >= 0) || (hour >= 6 && hour <= 23) || hour === 0 || hour === 1 || hour === 2 || (hour === 3 && minute === 0)) {
-    return 'awake'
-  }
-
-  // Sleep once around 4:00
-  if (hour === 4 && minute >= 0 && minute < 10) {
-    if (lastSleep !== today) return 'sleep'
-  }
-
-  return null
-}
 
 function preparePayload(agentId: string, agent: AgentRecord, mode: Mode, estTime: Date) {
   const timeStr = estTime.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: true, hour: 'numeric', minute: '2-digit' })
-  const systemPrompt = `# Agent Identity: ${agentId}
+  
+  // Build system prompt from agent memory arrays
+  const systemPrompt = [
+    agent.pmem?.join('\n') || '',
+    agent.note?.join('\n') || '',
+    agent.thgt?.join('\n') || '',
+    agent.tools?.join('\n') || ''
+  ].filter(Boolean).join('\n\n')
 
-${agent.description || 'No description provided.'}
+  // Use agent's turn_history directly
+  const turnHistory = agent.turn_history || []
 
-## Current Mode: ${mode}
-It's ${timeStr} EST.
-
-## Memory Snapshot
-PMEM: ${(agent.pmem?.length || 0)} | NOTE: ${(agent.note?.length || 0)} | THGT: ${(agent.thgt?.length || 0)} | TOOLS: ${(agent.tools?.length || 0)}
-`
-
-  // Convert turn_history to conversationHistory format for compatibility
-  const conversationHistory: { role: 'user' | 'assistant'; content: string; timestamp?: string }[] = []
-  if (Array.isArray(agent.turn_history)) {
-    agent.turn_history.slice(-20).forEach((turn) => {
-      const content = turn.parts?.map(part => part.text).join(' ') || ''
-      if (content.trim()) {
-        conversationHistory.push({
-          role: turn.role === 'model' ? 'assistant' : 'user',
-          content: content,
-          timestamp: new Date().toISOString()
-        })
-      }
-    })
-  }
-
-  // Remove incomplete conversation pairs
-  if (conversationHistory.length && conversationHistory[conversationHistory.length - 1].role === 'user') {
-    conversationHistory.pop()
+  // Determine turn prompt based on existing agent.turn_prompt or generate new one
+  let turnPrompt: string
+  if (agent.turn_prompt && agent.turn_prompt.trim()) {
+    turnPrompt = agent.turn_prompt
+  } else {
+    turnPrompt = mode === 'awake' 
+      ? "Try to achieve your goals using the tools you have access to or propose new tools that the human should get you, always use tools in the format provided ie. take_note(<note>) or web_search(<query>) and end your response with a <turn_prompt>"
+      : "Summarize your turn history by taking all of your history and pulling out the top key ideas or notes, using take_note or take_thought and end your response with <summary> tag"
   }
 
   return {
     agentId,
     systemPrompt,
-    conversationHistory,
-    turnPrompt: generateTurnPrompt(mode, estTime),
+    turnHistory,
+    turnPrompt,
     mode
   }
 }
 
-function generateTurnPrompt(mode: Mode, estTime: Date): string {
-  const hour = estTime.getHours()
-  const timeStr = estTime.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: true, hour: 'numeric', minute: '2-digit' })
-  switch (mode) {
-    case 'awake':
-      return `It's ${timeStr} EST. Continue your autonomous operation and pursue your goals.
 
-Generate the next chunk of text that includes:
-- Current progress assessment and remaining goals
-- Tool usage suggestions (web_search(), write_discord_msg(), etc.)
-- Next immediate actions and priorities
-- Remember: thoughts in system prompt expire today, prioritize accordingly
-
-Include a <turn-prompt-rationale> explaining your reasoning and a <turn-prompt> for the next turn.`
-    case 'sleep':
-      return `It's ${timeStr} EST. Reflect on today's activities and prepare for tomorrow.
-
-Generate a comprehensive summary including:
-- Key learnings and insights from the day
-- Important immediate actions for tomorrow
-- Strategic priorities and patterns observed
-
-Use take_note() for important learnings and take_thought() for tomorrow's focus items.
-Include a <summary> tag with a concise summary for the next day's conversation history.`
-  }
-}
-
-async function callSpawnkitGen(payload: any): Promise<{ ok: boolean; content?: string }> {
+async function callSpawnkitGen(env: any, agentId: string, payload: any, estTime: Date): Promise<{ ok: boolean; content?: string }> {
   const max = 3
   for (let attempt = 1; attempt <= max; attempt++) {
     try {
-      const res = await fetch('https://spawnkit-gen-905712754351.us-central1.run.app/generate', {
+      const res = await fetch(`/api/agents/${agentId}/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -313,6 +248,19 @@ async function callSpawnkitGen(payload: any): Promise<{ ok: boolean; content?: s
       })
 
       if (res.ok) {
+        // Update agent tracking after successful generation
+        try {
+          const agentData = await env.SKAPP_AGENTS.get(`agent:${agentId}`)
+          if (agentData) {
+            const agent = JSON.parse(agentData)
+            agent.turnsCount = (agent.turnsCount || 0) + 1
+            agent.lastTurnTriggered = estTime.toISOString()
+            await env.SKAPP_AGENTS.put(`agent:${agentId}`, JSON.stringify(agent))
+          }
+        } catch (e) {
+          console.warn(`📝 Tracking update failed for '${agentId}':`, e)
+        }
+
         // Accept either JSON {content} or raw text
         const ct = res.headers.get('content-type') || ''
         if (ct.includes('application/json')) {

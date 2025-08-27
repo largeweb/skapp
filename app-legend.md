@@ -1,6 +1,22 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2025-01-27**: Orchestrate Function Optimization & Generate Route
+  - **Mode Determination Optimization**: Moved mode determination before agent fetching (all agents use same mode)
+  - **Simplified Mode Logic**: Time >= 5:00 = awake, otherwise = sleep (removed per-agent mode determination)
+  - **Tracking Update Moved**: turnsCount and lastTurnTriggered now updated in callSpawnkitGen after successful generation
+  - **New Generate Route**: Created `/api/agents/[id]/generate` endpoint for agent generation requests
+  - **Generate Route Features**: Validates payload, calls Groq API, updates agent turn_history, returns generated content
+  - **Payload Structure**: agentId, systemPrompt, turnHistory, turnPrompt, mode
+  - **Removed**: determineAgentMode function and tracking update from main loop
+- **2025-01-27**: Major Orchestrate Function Update
+  - **Simplified Mode Determination**: Time >= 5:00 = awake, otherwise = sleep (removed complex scheduling)
+  - **System Prompt Generation**: Now builds from agent memory arrays (pmem.join() + note.join() + thgt.join() + tools.join())
+  - **Turn History**: Uses agent.turn_history directly instead of converting to conversationHistory format
+  - **Turn Prompt Logic**: Uses existing agent.turn_prompt if available, otherwise generates mode-specific prompts
+  - **Awake Mode Prompt**: "Try to achieve your goals using tools... end with <turn_prompt>"
+  - **Sleep Mode Prompt**: "Summarize turn history... end with <summary> tag"
+  - **Removed**: Complex generateTurnPrompt function and conversationHistory conversion logic
 - **2025-01-27**: Updated Agent Creation API for New Data Structure
   - **Validation Schema**: Updated CreateAgentSchema to use simplified flat structure with direct arrays
   - **Agent Data Creation**: Updated agentData structure to use pmem, note, thgt, tools arrays and turn_history
@@ -476,6 +492,9 @@ openai-hackathon/                 # ROOT - All Cursor Composer requests happen h
 ### 🔄 Planned Endpoints
 - `POST /api/orchestrate` - Cron worker endpoint for agent cycles
 - `GET /api/health` - Service health check
+
+### ✅ New Endpoints
+- `POST /api/agents/[id]/generate` - Agent generation endpoint for orchestration
 
 ## 🛠️ Environment Configuration
 
