@@ -54,8 +54,8 @@ export async function POST(request: Request) {
     const today = estTime.toISOString().slice(0, 10)
     console.log(`🌍 Orchestration time: UTC ${now.toISOString()} → EST ${estTime.toISOString()}`)
 
-    // Determine mode for all agents (simplified: time >= 5:00 = awake, otherwise sleep)
-    const mode = body.data.mode || (estTime.getHours() >= 5 ? 'awake' : 'sleep')
+    // Determine mode for all agents (hour = 5 = sleep, otherwise awake)
+    const mode = body.data.mode || (estTime.getHours() === 5 ? 'sleep' : 'awake')
     console.log(`🎭 Determined mode: ${mode} for all agents`)
 
     // Determine agents to process
@@ -136,18 +136,6 @@ export async function POST(request: Request) {
           }
         } catch (persistErr) {
           console.warn(`⚠️ Post-processing/persist failed for '${agentId}':`, persistErr)
-        }
-
-        // Update lastActivity via PUT to agent endpoint
-        try {
-          const origin = new URL(request.url).origin
-          await fetch(`${origin}/api/agents/${agentId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
-          })
-        } catch (putErr) {
-          console.warn(`⚠️ Agent PUT lastActivity update failed for '${agentId}':`, putErr)
         }
 
         successful++

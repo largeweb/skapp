@@ -1,13 +1,6 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
-- **2025-01-27**: Enhanced Sleep Mode History Management
-  - **Improved History Preservation**: Keep latest 10 turns + summary instead of replacing all history
-  - **User Role Addition**: Add user role entry "Please summarize the conversation history" before summary
-  - **Better Context Retention**: Maintain recent conversation context while adding summarized insights
-  - **Robust Error Handling**: Keep original history unchanged if summarization fails or returns no content
-  - **Enhanced Logging**: More detailed logging for different scenarios (success, no content, API failure)
-  - **Context Continuity**: Agents maintain recent context while gaining summarized historical insights
 - **2025-01-27**: Generate API Sleep Mode Simplification & Error Handling
   - **Sleep Mode Simplification**: Now only summarizes history without generating new response
   - **Summary Data Validation**: Skip agent update if no summary content received from Groq API
