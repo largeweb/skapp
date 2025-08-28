@@ -4,18 +4,18 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface MemoryEntry {
-  id: string
+  id?: string
   content: string
-  createdAt: string
+  createdAt?: string
   expiresAt?: string
   metadata?: any
 }
 
 interface MemoryData {
-  pmem: MemoryEntry[]
-  note: MemoryEntry[]
-  thgt: MemoryEntry[]
-  work: MemoryEntry[]
+  pmem: string[]
+  note: string[]
+  thgt: string[]
+  tools: string[]
 }
 
 interface MemoryViewerProps {
@@ -24,10 +24,10 @@ interface MemoryViewerProps {
 }
 
 export default function MemoryViewer({ agentId, className = '' }: MemoryViewerProps) {
-  const [memory, setMemory] = useState<MemoryData>({ pmem: [], note: [], thgt: [], work: [] })
+  const [memory, setMemory] = useState<MemoryData>({ pmem: [], note: [], thgt: [], tools: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeLayer, setActiveLayer] = useState<'pmem' | 'note' | 'thgt' | 'work'>('pmem')
+  const [activeLayer, setActiveLayer] = useState<'pmem' | 'note' | 'thgt' | 'tools'>('pmem')
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
@@ -37,24 +37,23 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
   const fetchMemory = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/agents/${agentId}/memory`)
+      const response = await fetch(`/api/agents/${agentId}`)
       if (!response.ok) {
-        throw new Error('Failed to fetch memory')
+        throw new Error('Failed to fetch agent data')
       }
       const data = await response.json() as any
       
-      // Ensure we have the correct memory structure with fallbacks
-      const memoryData = data.memory || {}
+      // Use the new flat data structure
       setMemory({
-        pmem: memoryData.pmem || [],
-        note: memoryData.note || [],
-        thgt: memoryData.thgt || [],
-        work: memoryData.work || []
+        pmem: data.pmem || [],
+        note: data.note || [],
+        thgt: data.thgt || [],
+        tools: data.tools || []
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       // Set empty memory structure on error
-      setMemory({ pmem: [], note: [], thgt: [], work: [] })
+      setMemory({ pmem: [], note: [], thgt: [], tools: [] })
     } finally {
       setLoading(false)
     }
@@ -80,12 +79,12 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
   }
 
   const filteredMemory = (memory[activeLayer] || []).filter(entry =>
-    entry.content.toLowerCase().includes(searchTerm.toLowerCase())
+    entry.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const layerConfig = {
     pmem: {
-      title: '🧠 Permanent Memory',
+      title: 'Permanent Memory',
       description: 'Core knowledge and persistent information',
       color: 'from-blue-500 to-blue-700',
       bgColor: 'bg-blue-50',
@@ -93,27 +92,27 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
       icon: '🧠'
     },
     note: {
-      title: '📝 Notes',
-      description: 'Temporary notes and observations',
-      color: 'from-blue-500 to-blue-700',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200',
+      title: 'Notes',
+      description: 'Temporary notes and observations (7-day retention)',
+      color: 'from-green-500 to-green-700',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
       icon: '📝'
     },
     thgt: {
-      title: '💭 Thoughts',
-      description: 'Internal thoughts and insights',
-      color: 'from-blue-500 to-blue-700',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200',
+      title: 'Thoughts',
+      description: 'Internal thoughts and insights (sleep reset)',
+      color: 'from-purple-500 to-purple-700',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200',
       icon: '💭'
     },
-    work: {
-      title: '⚡ Work Items',
-      description: 'Active work and conversations',
-      color: 'from-blue-500 to-blue-700',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200',
+    tools: {
+      title: 'Tools',
+      description: 'Available tools and capabilities',
+      color: 'from-orange-500 to-orange-700',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-200',
       icon: '⚡'
     }
   }
@@ -159,7 +158,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     <div className={`space-y-6 ${className}`}>
       {/* Layer Selector */}
       <div className="flex flex-wrap gap-2">
-        {(['pmem', 'note', 'thgt', 'work'] as const).map((layer) => (
+        {(['pmem', 'note', 'thgt', 'tools'] as const).map((layer) => (
           <motion.button
             key={layer}
             whileHover={{ scale: 1.05 }}
@@ -222,7 +221,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
             <div className="space-y-3">
               {filteredMemory.map((entry, index) => (
                 <motion.div
-                  key={entry.id}
+                  key={index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
@@ -232,34 +231,13 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center space-x-2">
                       <span className="text-lg">{layerConfig[activeLayer].icon}</span>
-                      <span className="text-xs text-gray-500 font-mono">{entry.id?.slice(0, 8) || 'unknown'}</span>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {entry.createdAt ? getTimeAgo(entry.createdAt) : 'Unknown'}
+                      <span className="text-xs text-gray-500 font-mono">#{index + 1}</span>
                     </div>
                   </div>
                   
                   <div className="text-gray-800 mb-3 whitespace-pre-wrap">
-                    {entry.content || 'No content'}
+                    {entry}
                   </div>
-                  
-                  <div className="flex justify-between items-center text-xs text-gray-500">
-                    <span>Created: {entry.createdAt ? formatDate(entry.createdAt) : 'Unknown'}</span>
-                    {entry.expiresAt && (
-                      <span>Expires: {formatDate(entry.expiresAt)}</span>
-                    )}
-                  </div>
-                  
-                  {entry.metadata && typeof entry.metadata === 'object' && Object.keys(entry.metadata).length > 0 && (
-                    <details className="mt-2">
-                      <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
-                        Metadata
-                      </summary>
-                      <pre className="text-xs bg-gray-50 p-2 rounded mt-1 overflow-x-auto text-gray-900">
-                        {JSON.stringify(entry.metadata, null, 2)}
-                      </pre>
-                    </details>
-                  )}
                 </motion.div>
               ))}
             </div>
