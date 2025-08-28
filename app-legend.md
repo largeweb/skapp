@@ -1,6 +1,14 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2025-01-27**: Fixed Tool Removal Functionality
+  - **Tool Remove Button**: Fixed remove button in tools section to use proper DELETE API
+  - **Index-Based Removal**: Tools now use `removeMemoryEntry('tools', toolIndex)` instead of custom function
+  - **Consistent API**: All tool operations now use the same memory API endpoints
+  - **Proper Indexing**: Tool removal finds correct index in memory array before deletion
+  - **Removed Redundancy**: Eliminated `removeToolFromAgent` function in favor of unified approach
+  - **Tool Selection Interface**: Updated checkbox handlers to use consistent removal logic
+  - **Memory API Integration**: Tools section now fully integrated with memory API endpoints
 - **2025-01-27**: Memory API Enhancement with PUT & DELETE Methods
   - **PUT Method**: Added for editing memory entries at specific indices with validation
   - **DELETE Method**: Added for removing memory entries by index with proper error handling
@@ -12,7 +20,7 @@
   - **Simplified Logic**: Removed complex agent data fetching from frontend
   - **Better Performance**: Direct memory operations instead of full agent updates
 - **2025-01-27**: MemoryViewer Edit & Remove Functionality
-  - **Memory Editing**: Added inline editing capability for pmem, note, and thgt entries
+  - **Memory Editing**: Added inline editing capability for pmem, note, thgt entries
   - **Memory Removal**: Added remove functionality for all memory types with confirmation
   - **Tool Removal**: Enhanced tools section with individual remove buttons for each tool
   - **Edit Interface**: Click "Edit" to show textarea with Save/Cancel buttons

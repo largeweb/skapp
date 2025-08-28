@@ -104,35 +104,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     }
   }
 
-  const removeToolFromAgent = async (toolId: string) => {
-    try {
-      // Get current agent data
-      const response = await fetch(`/api/agents/${agentId}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch agent data')
-      }
-      const agent = await response.json() as any
-      
-      // Remove the tool from the tools array
-      const updatedTools = agent.tools.filter((tool: string) => tool !== toolId)
-      
-      // Update the agent with the new tools array
-      const updateResponse = await fetch(`/api/agents/${agentId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...agent, tools: updatedTools })
-      })
-      
-      if (!updateResponse.ok) {
-        throw new Error('Failed to remove tool')
-      }
-      
-      // Trigger refresh by incrementing the trigger
-      setRefreshTrigger(prev => prev + 1)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove tool')
-    }
-  }
+
 
 
 
@@ -358,7 +330,11 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                         }`}
                         onClick={() => {
                           if (isSelected) {
-                            removeToolFromAgent(tool.id)
+                            // Find the index of the tool in the memory array
+                            const toolIndex = (memory.tools || []).indexOf(tool.id)
+                            if (toolIndex !== -1) {
+                              removeMemoryEntry('tools', toolIndex)
+                            }
                           } else {
                             addToolToAgent(tool.id)
                           }
@@ -371,7 +347,11 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                               checked={isSelected}
                               onChange={() => {
                                 if (isSelected) {
-                                  removeToolFromAgent(tool.id)
+                                  // Find the index of the tool in the memory array
+                                  const toolIndex = (memory.tools || []).indexOf(tool.id)
+                                  if (toolIndex !== -1) {
+                                    removeMemoryEntry('tools', toolIndex)
+                                  }
                                 } else {
                                   addToolToAgent(tool.id)
                                 }
@@ -436,7 +416,13 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                             <p className="text-sm text-gray-600 mt-1">{tool.description}</p>
                           </div>
                           <button
-                            onClick={() => removeToolFromAgent(toolId)}
+                            onClick={() => {
+                              // Find the index of the tool in the memory array
+                              const toolIndex = (memory.tools || []).indexOf(toolId)
+                              if (toolIndex !== -1) {
+                                removeMemoryEntry('tools', toolIndex)
+                              }
+                            }}
                             className="ml-2 text-red-500 hover:text-red-700 text-sm"
                           >
                             Remove
