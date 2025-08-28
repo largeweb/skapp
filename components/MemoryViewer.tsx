@@ -31,6 +31,8 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editContent, setEditContent] = useState('')
 
   const fetchMemory = useCallback(async () => {
     try {
@@ -130,6 +132,56 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove tool')
     }
+  }
+
+
+
+  const editMemoryEntry = async (layer: string, index: number, newContent: string) => {
+    try {
+      const response = await fetch(`/api/agents/${agentId}/memory?layer=${layer}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newContent, index })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update memory entry')
+      }
+      
+      // Trigger refresh by incrementing the trigger
+      setRefreshTrigger(prev => prev + 1)
+      setEditingIndex(null)
+      setEditContent('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update memory entry')
+    }
+  }
+
+  const removeMemoryEntry = async (layer: string, index: number) => {
+    try {
+      const response = await fetch(`/api/agents/${agentId}/memory?layer=${layer}&index=${index}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to remove memory entry')
+      }
+      
+      // Trigger refresh by incrementing the trigger
+      setRefreshTrigger(prev => prev + 1)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove memory entry')
+    }
+  }
+
+  const startEditing = (index: number, content: string) => {
+    setEditingIndex(index)
+    setEditContent(content)
+  }
+
+  const cancelEditing = () => {
+    setEditingIndex(null)
+    setEditContent('')
   }
 
   const availableTools = [
@@ -364,7 +416,39 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
             </motion.div>
           ) : (
             <div className="space-y-3">
-              {filteredMemory.map((entry, index) => (
+              {activeLayer === 'tools' ? (
+                // Special display for tools
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredMemory.map((toolId, index) => {
+                    const tool = availableTools.find(t => t.id === toolId)
+                    return tool ? (
+                      <motion.div
+                        key={toolId}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ delay: index * 0.1 }}
+                        className={`p-4 rounded-lg border ${layerConfig[activeLayer].borderColor} bg-white shadow-sm hover:shadow-md transition-shadow`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{tool.name}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{tool.description}</p>
+                          </div>
+                          <button
+                            onClick={() => removeToolFromAgent(toolId)}
+                            className="ml-2 text-red-500 hover:text-red-700 text-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </motion.div>
+                    ) : null
+                  })}
+                </div>
+              ) : (
+                // Regular display for other memory types
+                filteredMemory.map((entry, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
@@ -374,10 +458,54 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                   className={`p-4 rounded-lg border ${layerConfig[activeLayer].borderColor} bg-white shadow-sm hover:shadow-md transition-shadow`}
                 >
                   <div className="text-gray-800 whitespace-pre-wrap">
-                    {entry}
+                    {editingIndex === index ? (
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        rows={4}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 resize-none"
+                      />
+                    ) : (
+                      entry
+                    )}
+                  </div>
+                  <div className="flex justify-end space-x-3 mt-2">
+                    {editingIndex === index && (
+                      <>
+                        <button
+                          onClick={() => editMemoryEntry(activeLayer, index, editContent)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={cancelEditing}
+                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg transition-colors hover:bg-gray-400 focus-visible:ring-2 focus-visible:ring-gray-500"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
+                    {editingIndex !== index && (
+                      <>
+                        <button
+                          onClick={() => startEditing(index, entry)}
+                          className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-yellow-500"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => removeMemoryEntry(activeLayer, index)}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-red-500"
+                        >
+                          Remove
+                        </button>
+                      </>
+                    )}
                   </div>
                 </motion.div>
-              ))}
+              ))
+              )}
             </div>
           )}
         </AnimatePresence>

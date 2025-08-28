@@ -1,15 +1,27 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2025-01-27**: Memory API Enhancement with PUT & DELETE Methods
+  - **PUT Method**: Added for editing memory entries at specific indices with validation
+  - **DELETE Method**: Added for removing memory entries by index with proper error handling
+  - **MemoryEditSchema**: New Zod schema for validating edit requests (content + index)
+  - **Index Validation**: Proper bounds checking for memory array indices
+  - **Error Codes**: Specific error codes for invalid layers, indices, and operation failures
+  - **Consistent API**: All memory operations now use dedicated memory endpoints
+  - **MemoryViewer Integration**: Updated component to use new PUT/DELETE endpoints
+  - **Simplified Logic**: Removed complex agent data fetching from frontend
+  - **Better Performance**: Direct memory operations instead of full agent updates
+- **2025-01-27**: MemoryViewer Edit & Remove Functionality
+  - **Memory Editing**: Added inline editing capability for pmem, note, and thgt entries
+  - **Memory Removal**: Added remove functionality for all memory types with confirmation
+  - **Tool Removal**: Enhanced tools section with individual remove buttons for each tool
+  - **Edit Interface**: Click "Edit" to show textarea with Save/Cancel buttons
+  - **Visual Feedback**: Edit mode shows different UI with proper form controls
+  - **State Management**: Added editingIndex and editContent state for edit mode
+  - **API Integration**: editMemoryEntry() and removeMemoryEntry() functions for backend updates
+  - **Immediate Updates**: All changes trigger automatic UI refresh using refresh trigger
+  - **Error Handling**: Proper error handling with user feedback for all operations
 - **2025-01-27**: MemoryViewer Tools Section Enhancement
-  - **Tool Selection Interface**: Updated tools section to show checkbox-based selection instead of free text input
-  - **Available Tools**: Shows predefined tools (web_search, take_note, take_thought, discord_msg, sms_operator) with descriptions
-  - **Interactive Selection**: Users can check/uncheck tools to add/remove them from agent's tool set
-  - **Visual Feedback**: Selected tools highlighted with blue background, unselected with gray
-  - **Immediate Updates**: Tool changes trigger automatic UI refresh using refresh trigger mechanism
-  - **Special Display**: Tools section shows tool cards with names, descriptions, and remove buttons
-  - **Consistent UX**: Maintains same add form pattern for other memory types (pmem, note, thgt)
-- **2025-01-27**: Multi-Step Agent Creation Wizard Implementation
   - **New Create Page**: Implemented 5-step wizard (ID, Description, PMEM, Tools, Review) based on page2 structure
   - **Data Structure**: Adapted to new flat structure with pmem, note, thgt, tools arrays and turn_history
   - **PMEM Generation**: AI-powered permanent memory generation using /api/ai/chat endpoint
@@ -138,7 +150,7 @@
   - **🔧 Data Structure Fix**: Fixed mismatch between frontend expectations and API response structure
   - **📊 Memory Stats**: Updated frontend to use `agent.memoryStats?.pmem` instead of `agent.memory?.pmem?.length`
   - **📅 Date Fields**: Fixed date field access to use `agent.createdAt` and `agent.lastActivity`
-  - **🎨 Rendering Debug**: Added comprehensive debug logging to track agent rendering process
+  - **�� Rendering Debug**: Added comprehensive debug logging to track agent rendering process
   - **✅ Build Validation**: All changes compile successfully and build passes without errors
 - **2024-12-19**: Fixed Agents Page Display & Refresh Issues
   - **🔄 Auto-Refresh**: Added visibility change detection to refresh agents when returning to page
