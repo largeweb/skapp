@@ -29,6 +29,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
   const [error, setError] = useState<string | null>(null)
   const [activeLayer, setActiveLayer] = useState<'pmem' | 'note' | 'thgt' | 'tools'>('pmem')
   const [searchTerm, setSearchTerm] = useState('')
+  const [showAddForm, setShowAddForm] = useState(false)
 
   useEffect(() => {
     fetchMemory()
@@ -73,6 +74,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
       
       // Refresh memory data
       await fetchMemory()
+      setShowAddForm(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add memory entry')
     }
@@ -196,12 +198,37 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
             className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
           />
         </div>
-        <AddMemoryEntry 
-          layer={activeLayer} 
-          onAdd={addMemoryEntry}
-          layerConfig={layerConfig[activeLayer]}
-        />
+        <motion.button
+          onClick={() => setShowAddForm(!showAddForm)}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={`px-6 py-2 rounded-lg font-medium transition-all ${
+            showAddForm
+              ? 'bg-gray-600 text-white'
+              : `bg-gradient-to-r ${layerConfig[activeLayer].color} text-white hover:shadow-lg`
+          }`}
+        >
+          {showAddForm ? 'Cancel' : 'Add Memory'}
+        </motion.button>
       </div>
+
+      {/* Add Memory Form */}
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <AddMemoryEntry 
+              layer={activeLayer} 
+              onAdd={addMemoryEntry}
+              layerConfig={layerConfig[activeLayer]}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Memory Entries */}
       <div className="space-y-4">
@@ -228,14 +255,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                   transition={{ delay: index * 0.1 }}
                   className={`p-4 rounded-lg border ${layerConfig[activeLayer].borderColor} bg-white shadow-sm hover:shadow-md transition-shadow`}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">{layerConfig[activeLayer].icon}</span>
-                      <span className="text-xs text-gray-500 font-mono">#{index + 1}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="text-gray-800 mb-3 whitespace-pre-wrap">
+                  <div className="text-gray-800 whitespace-pre-wrap">
                     {entry}
                   </div>
                 </motion.div>
@@ -272,26 +292,41 @@ function AddMemoryEntry({ layer, onAdd, layerConfig }: AddMemoryEntryProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
-      <input
-        type="text"
-        placeholder={`Add ${layer}...`}
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-        disabled={isAdding}
-      />
-      <button
-        type="submit"
-        disabled={!content.trim() || isAdding}
-        className={`px-4 py-2 rounded-lg font-medium transition-all ${
-          content.trim() && !isAdding
-            ? `bg-gradient-to-r ${layerConfig.color} text-white hover:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500`
-            : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
-        }`}
-      >
-        {isAdding ? 'Adding...' : 'Add'}
-      </button>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Add {layerConfig.title}
+        </label>
+        <textarea
+          placeholder={`Enter ${layer.toLowerCase()} content...`}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          rows={4}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 resize-none"
+          disabled={isAdding}
+        />
+      </div>
+      <div className="flex justify-end space-x-3">
+        <button
+          type="button"
+          onClick={() => setContent('')}
+          className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          disabled={isAdding}
+        >
+          Clear
+        </button>
+        <button
+          type="submit"
+          disabled={!content.trim() || isAdding}
+          className={`px-6 py-2 rounded-lg font-medium transition-all ${
+            content.trim() && !isAdding
+              ? `bg-gradient-to-r ${layerConfig.color} text-white hover:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500`
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
+          }`}
+        >
+          {isAdding ? 'Adding...' : 'Add Memory'}
+        </button>
+      </div>
     </form>
   )
 }
