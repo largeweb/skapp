@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface MemoryEntry {
@@ -30,15 +30,14 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
   const [activeLayer, setActiveLayer] = useState<'pmem' | 'note' | 'thgt' | 'tools'>('pmem')
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  useEffect(() => {
-    fetchMemory()
-  }, [agentId])
-
-  const fetchMemory = async () => {
+  const fetchMemory = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/agents/${agentId}`)
+      const response = await fetch(`/api/agents/${agentId}?t=${Date.now()}`, {
+        cache: 'no-store'
+      })
       if (!response.ok) {
         throw new Error('Failed to fetch agent data')
       }
@@ -58,7 +57,11 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     } finally {
       setLoading(false)
     }
-  }
+  }, [agentId])
+
+  useEffect(() => {
+    fetchMemory()
+  }, [fetchMemory, refreshTrigger])
 
   const addMemoryEntry = async (layer: string, content: string) => {
     try {
@@ -72,8 +75,8 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
         throw new Error('Failed to add memory entry')
       }
       
-      // Refresh memory data
-      await fetchMemory()
+      // Trigger refresh by incrementing the trigger
+      setRefreshTrigger(prev => prev + 1)
       setShowAddForm(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add memory entry')
