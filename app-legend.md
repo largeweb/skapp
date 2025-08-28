@@ -1,6 +1,15 @@
 # SpawnKit: Persistent AI Agents Platform 🧠✨
 
 ## 🚀 Recent Updates
+- **2025-01-27**: Multi-Step Agent Creation Wizard Implementation
+  - **New Create Page**: Implemented 5-step wizard (ID, Description, PMEM, Tools, Review) based on page2 structure
+  - **Data Structure**: Adapted to new flat structure with pmem, note, thgt, tools arrays and turn_history
+  - **PMEM Generation**: AI-powered permanent memory generation using /api/ai/chat endpoint
+  - **Tool Selection**: Interactive tool selection with checkboxes for web_search, take_note, take_thought, discord_msg, sms_operator
+  - **ID Availability Check**: New /api/agents/[id]/check-availability endpoint for real-time ID validation
+  - **Progress Tracking**: Visual progress indicator with step completion status
+  - **Form Validation**: Real-time validation with error handling and user feedback
+  - **Responsive Design**: Clean, modern UI with Framer Motion animations
 - **2025-01-27**: Generate API Sleep Mode Simplification & Error Handling
   - **Sleep Mode Simplification**: Now only summarizes history without generating new response
   - **Summary Data Validation**: Skip agent update if no summary content received from Groq API
