@@ -83,6 +83,63 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     }
   }
 
+  const addToolToAgent = async (toolId: string) => {
+    try {
+      const response = await fetch(`/api/agents/${agentId}/memory?layer=tools`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: toolId })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to add tool')
+      }
+      
+      // Trigger refresh by incrementing the trigger
+      setRefreshTrigger(prev => prev + 1)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add tool')
+    }
+  }
+
+  const removeToolFromAgent = async (toolId: string) => {
+    try {
+      // Get current agent data
+      const response = await fetch(`/api/agents/${agentId}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch agent data')
+      }
+      const agent = await response.json() as any
+      
+      // Remove the tool from the tools array
+      const updatedTools = agent.tools.filter((tool: string) => tool !== toolId)
+      
+      // Update the agent with the new tools array
+      const updateResponse = await fetch(`/api/agents/${agentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...agent, tools: updatedTools })
+      })
+      
+      if (!updateResponse.ok) {
+        throw new Error('Failed to remove tool')
+      }
+      
+      // Trigger refresh by incrementing the trigger
+      setRefreshTrigger(prev => prev + 1)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove tool')
+    }
+  }
+
+  const availableTools = [
+    { id: 'web_search', name: 'Web Search', description: 'Search the internet for current information' },
+    { id: 'take_note', name: 'Take Notes', description: 'Save important information to memory' },
+    { id: 'take_thought', name: 'Take Thoughts', description: 'Record insights and reflections' },
+    { id: 'discord_msg', name: 'Discord Messages', description: 'Send messages to Discord channels' },
+    { id: 'sms_operator', name: 'SMS Operator', description: 'Send SMS messages' }
+  ]
+
   const filteredMemory = (memory[activeLayer] || []).filter(entry =>
     entry.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -224,11 +281,69 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <AddMemoryEntry 
-              layer={activeLayer} 
-              onAdd={addMemoryEntry}
-              layerConfig={layerConfig[activeLayer]}
-            />
+            {activeLayer === 'tools' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Available Tools
+                  </label>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Choose which tools your agent can use. You can modify this selection at any time.
+                  </p>
+                </div>
+                
+                <div className="space-y-3">
+                  {availableTools.map((tool) => {
+                    const isSelected = (memory.tools || []).includes(tool.id)
+                    
+                    return (
+                      <div 
+                        key={tool.id} 
+                        className={`border rounded-lg p-4 transition-all cursor-pointer ${
+                          isSelected 
+                            ? 'border-blue-500 bg-blue-50' 
+                            : 'border-gray-300 bg-white hover:border-gray-400'
+                        }`}
+                        onClick={() => {
+                          if (isSelected) {
+                            removeToolFromAgent(tool.id)
+                          } else {
+                            addToolToAgent(tool.id)
+                          }
+                        }}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className="mt-1">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {
+                                if (isSelected) {
+                                  removeToolFromAgent(tool.id)
+                                } else {
+                                  addToolToAgent(tool.id)
+                                }
+                              }}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-gray-900 font-medium">{tool.name}</h3>
+                            <p className="text-gray-600 text-sm">{tool.description}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <AddMemoryEntry 
+                layer={activeLayer} 
+                onAdd={addMemoryEntry}
+                layerConfig={layerConfig[activeLayer]}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
