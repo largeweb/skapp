@@ -118,6 +118,10 @@ Example format:
   const validateForm = () => {
     const errors: Record<string, string> = {}
     
+    if (!agentData.name.trim()) {
+      errors.name = 'Agent name is required'
+    }
+    
     if (!agentData.agentId.trim()) {
       errors.agentId = 'Agent ID is required'
     } else if (!/^[a-zA-Z0-9_-]+$/.test(agentData.agentId)) {
@@ -199,7 +203,7 @@ Example format:
     }
   }
 
-  const canProceedFromId = agentData.agentId.trim() && idAvailable === true
+  const canProceedFromId = agentData.name.trim() && agentData.agentId.trim() && idAvailable === true
   const canProceedFromDescription = agentData.description.trim().length > 10
   const canProceedFromPmem = agentData.pmem.length > 0
   const canProceedFromTools = true // Tools are optional
@@ -309,16 +313,16 @@ Example format:
           </motion.div>
         )}
 
-        {/* Step 1: Agent ID */}
+        {/* Step 1: Agent ID & Name */}
         {currentStep === 'id' && (
           <motion.div
             variants={itemVariants}
             initial="hidden"
             animate="visible"
           >
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Step 1: Choose Agent ID</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Step 1: Agent Identity</h2>
             <p className="text-gray-600 mb-6">
-              Pick a unique identifier for your agent. This will be their digital name.
+              Set your agent's unique identifier and display name.
             </p>
             
             <div className="space-y-4">
@@ -361,6 +365,32 @@ Example format:
                     animate={{ opacity: 1, x: 0 }}
                   >
                     {validation.errors.agentId}
+                  </motion.p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Agent Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={agentData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className={`w-full px-4 py-2 border rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-opacity-50 ${
+                    validation.errors.name
+                      ? 'border-red-400 focus:border-red-400 focus:ring-red-500'
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                  }`}
+                  placeholder="e.g., Research Bot, AI Assistant"
+                />
+                {validation.errors.name && (
+                  <motion.p 
+                    className="text-red-600 text-sm mt-1"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                  >
+                    {validation.errors.name}
                   </motion.p>
                 )}
               </div>
@@ -713,6 +743,12 @@ Example format:
             </p>
             
             <div className="space-y-6 mb-8">
+              {/* Agent Name */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Agent Name</h3>
+                <p className="text-gray-700">{agentData.name}</p>
+              </div>
+
               {/* Agent ID */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Agent ID</h3>
