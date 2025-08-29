@@ -7,12 +7,13 @@ const CheckAvailabilitySchema = z.object({
   id: z.string().min(1).max(100)
 })
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { env } = getRequestContext()
+    const { id } = await params
     
     // Validate the ID parameter
-    const validated = CheckAvailabilitySchema.safeParse({ id: params.id })
+    const validated = CheckAvailabilitySchema.safeParse({ id: id })
     if (!validated.success) {
       return Response.json({ error: 'Invalid agent ID' }, { status: 400 })
     }
