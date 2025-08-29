@@ -97,7 +97,7 @@ export async function POST(request: Request) {
         const payload = preparePayload(agentId, agent, mode, estTime)
         console.log(`🔍 Payload: ${JSON.stringify(payload)}`)
 
-        const { ok, content } = await callSpawnkitGen(env, agentId, payload, estTime)
+        const { ok, content } = await callSpawnkitGen(env, agentId, payload, estTime, new URL(request.url).origin)
         if (!ok) {
           failed++
           results.push({ agentId, status: 'failed', mode, ms: Date.now() - loopStart })
@@ -246,11 +246,13 @@ function preparePayload(agentId: string, agent: AgentRecord, mode: Mode, estTime
 }
 
 
-async function callSpawnkitGen(env: any, agentId: string, payload: any, estTime: Date): Promise<{ ok: boolean; content?: string }> {
+async function callSpawnkitGen(env: any, agentId: string, payload: any, estTime: Date, origin: string): Promise<{ ok: boolean; content?: string }> {
   const max = 3
   for (let attempt = 1; attempt <= max; attempt++) {
     try {
-      const res = await fetch(`/api/agents/${agentId}/generate`, {
+      console.log(`🔍 Calling SpawnkitGen for agent: ${agentId}`)
+      
+      const res = await fetch(`${origin}/api/agents/${agentId}/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

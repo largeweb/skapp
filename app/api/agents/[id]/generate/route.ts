@@ -24,6 +24,7 @@ export async function POST(
   try {
     const { env } = await getRequestContext()
     const { id } = await params
+    console.log(`🔍 Generating for agent: ${id}`)
     
     // Parse and validate input
     const body = await request.json()
@@ -37,6 +38,7 @@ export async function POST(
         code: 'AGENT_NOT_FOUND'
       }, { status: 404 })
     }
+    console.log(`🔍 Agent found: ${id}`)
     
     const agent = JSON.parse(agentData)
     
@@ -108,6 +110,8 @@ async function handleAwakeMode(env: any, agent: any, agentId: string, validated:
   
   // Add current turn prompt as user message
   messages.push({ role: 'user', content: validated.turnPrompt })
+
+  console.log(`🔍 Messages: ${JSON.stringify(messages)}`)
   
   // Call Groq API
   const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
