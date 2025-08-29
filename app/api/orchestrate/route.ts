@@ -190,13 +190,38 @@ function isDaylightSavingTime(date: Date): boolean {
 function preparePayload(agentId: string, agent: AgentRecord, mode: Mode, estTime: Date) {
   const timeStr = estTime.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: true, hour: 'numeric', minute: '2-digit' })
   
-  // Build system prompt from agent memory arrays
-  const systemPrompt = [
-    agent.pmem?.join('\n') || '',
-    agent.note?.join('\n') || '',
-    agent.thgt?.join('\n') || '',
-    agent.tools?.join('\n') || ''
-  ].filter(Boolean).join('\n\n')
+  // Build structured system prompt with clear memory organization
+  const systemPromptParts = []
+  
+  // 1. Agent Description (Core Goal/Identity)
+  if (agent.description && agent.description.trim()) {
+    systemPromptParts.push(`AGENT GOAL: ${agent.description}`)
+  }
+  
+  // 2. Permanent Memory (Static, user-defined, persistent)
+  if (agent.pmem && agent.pmem.length > 0) {
+    systemPromptParts.push(`PERMANENT MEMORY (Static Knowledge):\n${agent.pmem.join('\n')}`)
+  }
+  
+  // 3. Weekly Notes (7-day persistence, weekly purpose)
+  if (agent.note && agent.note.length > 0) {
+    systemPromptParts.push(`WEEKLY NOTES (7-day persistence):\n${agent.note.join('\n')}`)
+  }
+  
+  // 4. Daily Thoughts (1-day persistence, daily goals)
+  if (agent.thgt && agent.thgt.length > 0) {
+    systemPromptParts.push(`DAILY THOUGHTS (1-day persistence):\n${agent.thgt.join('\n')}`)
+  }
+  
+  // 5. Available Tools
+  if (agent.tools && agent.tools.length > 0) {
+    systemPromptParts.push(`AVAILABLE TOOLS: ${agent.tools.join(', ')}`)
+  }
+  
+  // 6. Current Time Context
+  systemPromptParts.push(`CURRENT TIME: ${timeStr} EST`)
+  
+  const systemPrompt = systemPromptParts.join('\n\n')
 
   // Use agent's turn_history directly
   const turnHistory = agent.turn_history || []
