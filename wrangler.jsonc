@@ -10,7 +10,7 @@
 		"nodejs_compat"
 	],
 	"vars": { 
-		"GROQ_API_KEY": "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",
+		"GROQ_API_KEY": "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",
 		"GROQ_MODEL": "openai/gpt-oss-120b",
 		"ENVIRONMENT": "production"
 	},

@@ -232,7 +232,7 @@ function preparePayload(agentId: string, agent: AgentRecord, mode: Mode, estTime
     turnPrompt = agent.turn_prompt
   } else {
     turnPrompt = mode === 'awake' 
-      ? "Try to achieve your goals using the tools you have access to or propose new tools that the human should get you, always use tools in the format provided ie. take_note(<note>) or web_search(<query>) and end your response with a <turn_prompt>"
+      ? "Try to achieve your goals using the tools you have access to or propose new tools that the human should get you, always use tools in the format provided ie. take_note(<note>) or web_search(<query>). After your response, include your next step in <turn_prompt> tags."
       : "Summarize your turn history by taking all of your history and pulling out the top key ideas or notes, using take_note or take_thought and end your response with <summary> tag"
   }
 

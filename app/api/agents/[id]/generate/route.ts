@@ -111,7 +111,7 @@ async function handleAwakeMode(env: any, agent: any, agentId: string, validated:
   // Add current turn prompt as user message
   messages.push({ role: 'user', content: validated.turnPrompt })
 
-  console.log(`🔍 Messages: ${JSON.stringify(messages)}`)
+  console.log(`🔍 Messages 1: ${messages}`)
   
   // Call Groq API
   const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -127,6 +127,7 @@ async function handleAwakeMode(env: any, agent: any, agentId: string, validated:
       temperature: 0.7
     })
   })
+  console.log("groqResponse=========>", groqResponse)
   
   if (!groqResponse.ok) {
     const errorData = await groqResponse.text()
@@ -136,15 +137,39 @@ async function handleAwakeMode(env: any, agent: any, agentId: string, validated:
   
   const response = await groqResponse.json() as any
   const generatedContent = response.choices[0]?.message?.content || 'No response generated'
+  console.log(`🔍 Generated content: ${generatedContent}`)
   
-  // Add the generated response to agent's turn history
-  const newTurn = {
-    role: 'model' as const,
-    parts: [{ text: generatedContent }]
+  // Extract next turn prompt from the generated content
+  const nextTurnPrompt = extractNextTurnPrompt(generatedContent)
+  
+  // Remove turn_prompt tags from the generated content for storage
+  const cleanGeneratedContent = removeTurnPromptTags(generatedContent)
+  
+  // Add the user prompt (turn_prompt) to agent's turn history
+  const userTurn = {
+    role: 'user' as const,
+    parts: [{ text: validated.turnPrompt }]
   }
   
+  // Add the cleaned generated response to agent's turn history
+  const modelTurn = {
+    role: 'model' as const,
+    parts: [{ text: cleanGeneratedContent }]
+  }
+
+  console.log(`🔍 User turn: ${JSON.stringify(userTurn)}`)
+  console.log(`🔍 Model turn: ${JSON.stringify(modelTurn)}`)
+  console.log(`🔍 Next turn prompt: ${nextTurnPrompt}`)
+  
   agent.turn_history = agent.turn_history || []
-  agent.turn_history.push(newTurn)
+  agent.turn_history.push(userTurn)
+  agent.turn_history.push(modelTurn)
+  
+  // Save the next turn prompt to agent data for next cycle
+  if (nextTurnPrompt) {
+    agent.turn_prompt = nextTurnPrompt
+    console.log(`💾 Saved next turn prompt: ${nextTurnPrompt}`)
+  }
   
   // Update agent in KV
   await env.SKAPP_AGENTS.put(`agent:${agentId}`, JSON.stringify(agent))
@@ -229,6 +254,20 @@ async function summarizeHistory(env: any, agent: any, agentId: string) {
     console.error(`🚨 Sleep mode summarization error for agent ${agentId}:`, error)
     // Keep existing history on error
   }
+}
+
+function extractNextTurnPrompt(content: string): string | null {
+  // Look for <turn_prompt>...</turn_prompt> tags in the content
+  const turnPromptMatch = content.match(/<turn_prompt>([\s\S]*?)<\/turn_prompt>/i)
+  if (turnPromptMatch && turnPromptMatch[1]) {
+    return turnPromptMatch[1].trim()
+  }
+  return null
+}
+
+function removeTurnPromptTags(content: string): string {
+  // Remove <turn_prompt>...</turn_prompt> tags from the content
+  return content.replace(/<turn_prompt>[\s\S]*?<\/turn_prompt>/gi, '').trim()
 }
 
 
