@@ -94,24 +94,41 @@ export async function POST(
 async function handleAwakeMode(env: any, agent: any, agentId: string, validated: any) {
   // Convert turnHistory to conversation format for Groq API
   const messages = [
-    { role: 'system', content: validated.systemPrompt }
+    { 
+      role: 'system', 
+      content: `${validated.systemPrompt}
+
+IMPORTANT INSTRUCTIONS:
+- You are an autonomous AI agent working toward a specific goal
+- Each response should show progress made toward the goal
+- Use available tools when appropriate (take_note, web_search, take_thought, etc.)
+- Always end your response with a <turn_prompt> tag containing the next specific step
+- The next step should be concrete and actionable
+- If you've achieved the goal, indicate completion in your response
+- Be strategic and methodical in your approach`
+    }
   ]
   
-  // Add turn history as conversation
-  validated.turnHistory.forEach((turn: any) => {
-    const content = turn.parts.map((part: any) => part.text).join(' ')
-    if (content.trim()) {
-      messages.push({
-        role: turn.role === 'model' ? 'assistant' : 'user',
-        content: content
-      })
-    }
-  })
+  // Add turn history as conversation context
+  if (validated.turnHistory && validated.turnHistory.length > 0) {
+    messages.push({
+      role: 'user',
+      content: `Previous conversation context:\n${validated.turnHistory.map((turn: any) => {
+        const content = turn.parts.map((part: any) => part.text).join(' ')
+        return `${turn.role}: ${content}`
+      }).join('\n')}`
+    })
+  }
   
   // Add current turn prompt as user message
-  messages.push({ role: 'user', content: validated.turnPrompt })
+  messages.push({ 
+    role: 'user', 
+    content: `Current task: ${validated.turnPrompt}
 
-  console.log(`🔍 Messages 1: ${messages}`)
+Please proceed with this task and show your progress toward the goal.` 
+  })
+
+  console.log(`🔍 Messages for Groq: ${JSON.stringify(messages, null, 2)}`)
   
   // Call Groq API
   const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -127,6 +144,7 @@ async function handleAwakeMode(env: any, agent: any, agentId: string, validated:
       temperature: 0.7
     })
   })
+  
   console.log("groqResponse=========>", groqResponse)
   
   if (!groqResponse.ok) {
@@ -257,11 +275,13 @@ async function summarizeHistory(env: any, agent: any, agentId: string) {
 }
 
 function extractNextTurnPrompt(content: string): string | null {
-  // Look for <turn_prompt>...</turn_prompt> tags in the content
   const turnPromptMatch = content.match(/<turn_prompt>([\s\S]*?)<\/turn_prompt>/i)
   if (turnPromptMatch && turnPromptMatch[1]) {
-    return turnPromptMatch[1].trim()
+    const nextTurnPrompt = turnPromptMatch[1].trim()
+    console.log(`🔍 Found turn prompt: ${nextTurnPrompt}`)
+    return nextTurnPrompt
   }
+  console.log(`❌ No turn prompt found in content`)
   return null
 }
 
