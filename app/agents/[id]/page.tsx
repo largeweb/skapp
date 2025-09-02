@@ -62,10 +62,10 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   const tabs = [
-    { id: 'chat', label: 'Chat', icon: 'Chat' },
-    { id: 'memory', label: 'Memory', icon: 'Memory' },
-    { id: 'activity', label: 'Activity', icon: 'Activity' },
-    { id: 'settings', label: 'Settings', icon: 'Settings' }
+    { id: 'chat', label: 'Chat', icon: '💬' },
+    { id: 'memory', label: 'Memory', icon: '🧠' },
+    { id: 'activity', label: 'Activity', icon: '📊' },
+    { id: 'settings', label: 'Settings', icon: '⚙️' }
   ]
 
   if (loading) {
@@ -96,10 +96,8 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'awake': return { bg: 'bg-blue-100', text: 'text-blue-600' }
+      case 'awake': return { bg: 'bg-green-100', text: 'text-green-600' }
       case 'sleep': return { bg: 'bg-blue-100', text: 'text-blue-600' }
-      case 'deep_sleep': return { bg: 'bg-blue-100', text: 'text-blue-600' }
-      case 'wakeup': return { bg: 'bg-blue-100', text: 'text-blue-600' }
       default: return { bg: 'bg-gray-100', text: 'text-gray-600' }
     }
   }
@@ -119,7 +117,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           </div>
           <div className="flex items-center space-x-4">
             <div className={`px-4 py-2 rounded-full text-sm font-medium ${statusColors.bg} ${statusColors.text}`}>
-              {agent.currentMode || 'awake'} ({agent.lastActivity || 'Unknown'})
+              {agent.currentMode || 'awake'} mode
             </div>
             <Link href={`/agents/${agent.agentId}/settings`} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors">
               Settings
@@ -141,13 +139,14 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
+              className={`px-6 py-4 text-sm font-medium transition-colors flex items-center space-x-2 ${
                 activeTab === tab.id
                   ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              {tab.label}
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
@@ -202,11 +201,11 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                 <div>
                   <h4 className="font-medium mb-2">Memory Configuration</h4>
                   <div className="bg-gray-50 p-3 rounded border text-gray-600">
-                    Core Knowledge: {agent.coreKnowledge?.length || 0} entries<br/>
-                    Available tools: {Object.entries(agent.availableTools || {})
-                      .filter(([_, enabled]) => enabled)
-                      .map(([tool, _]) => tool)
-                      .join(', ')}
+                    PMEM: {agent.pmem?.length || 0} entries<br/>
+                    Notes: {agent.note?.length || 0} entries<br/>
+                    Thoughts: {agent.thgt?.length || 0} entries<br/>
+                    Tools: {agent.tools?.length || 0} entries<br/>
+                    Available tools: {agent.tools?.join(', ') || 'None'}
                   </div>
                 </div>
 
@@ -215,7 +214,8 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                   <div className="bg-gray-50 p-3 rounded border text-gray-600">
                     Timezone: EST<br/>
                     Current Mode: {agent.currentMode || 'awake'}<br/>
-                    Last Activity: {agent.lastActivity || 'Unknown'}
+                    Last Activity: {agent.lastActivity || 'Unknown'}<br/>
+                    Turns Count: {agent.turnsCount || 0}
                   </div>
                 </div>
               </div>

@@ -24,6 +24,7 @@ export async function POST(
   try {
     const { env } = await getRequestContext()
     const { id } = await params
+    console.log(`🔍 Generating for agent: ${id}`)
     
     // Parse and validate input
     const body = await request.json()
@@ -37,6 +38,7 @@ export async function POST(
         code: 'AGENT_NOT_FOUND'
       }, { status: 404 })
     }
+    console.log(`🔍 Agent found: ${id}`)
     
     const agent = JSON.parse(agentData)
     
@@ -90,24 +92,60 @@ export async function POST(
 }
 
 async function handleAwakeMode(env: any, agent: any, agentId: string, validated: any) {
+  // Check if agent just woke up from sleep mode
+  const justWokeUp = agent.currentMode === 'sleep' && validated.mode === 'awake'
+  
+  // Update agent's current mode
+  agent.previousMode = agent.currentMode
+  agent.currentMode = validated.mode
+  agent.lastActivity = new Date().toISOString()
+  
   // Convert turnHistory to conversation format for Groq API
   const messages = [
-    { role: 'system', content: validated.systemPrompt }
+    { 
+      role: 'system', 
+      content: `${validated.systemPrompt}
+
+IMPORTANT INSTRUCTIONS:
+- You are an autonomous AI agent working toward a specific goal
+- Each response should show progress made toward the goal
+- Use available tools when appropriate (take_note, web_search, take_thought, etc.)
+- Always end your response with a <turn_prompt> tag containing the next specific step
+- The next step should be concrete and actionable
+- If you've achieved the goal, indicate completion in your response
+- Be strategic and methodical in your approach${justWokeUp ? `
+
+MEMORY STATUS UPDATE:
+- You have just woken up from sleep mode
+- Expired notes have been automatically removed from your memory
+- All previous thoughts have been cleared for the new day
+- Your permanent memory and tools remain intact
+- You can now start fresh with new notes and thoughts for today
+- Focus on current priorities and immediate next steps` : ''}`
+    }
   ]
   
-  // Add turn history as conversation
-  validated.turnHistory.forEach((turn: any) => {
-    const content = turn.parts.map((part: any) => part.text).join(' ')
-    if (content.trim()) {
-      messages.push({
-        role: turn.role === 'model' ? 'assistant' : 'user',
-        content: content
-      })
-    }
-  })
+  // Add turn history as conversation context
+  if (validated.turnHistory && validated.turnHistory.length > 0) {
+    messages.push({
+      role: 'user',
+      content: `Previous conversation context:\n${validated.turnHistory.map((turn: any) => {
+        const content = turn.parts.map((part: any) => part.text).join(' ')
+        return `${turn.role}: ${content}`
+      }).join('\n')}`
+    })
+  }
   
   // Add current turn prompt as user message
-  messages.push({ role: 'user', content: validated.turnPrompt })
+  messages.push({ 
+    role: 'user', 
+    content: `Current task: ${validated.turnPrompt}
+
+Please proceed with this task and show your progress toward the goal.` 
+  })
+
+  console.log(`🔍 Messages for Groq: ${JSON.stringify(messages, null, 2)}`)
+  console.log(`🌅 Agent ${agentId} mode: ${validated.mode}${justWokeUp ? ' (just woke up)' : ''}`)
   
   // Call Groq API
   const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -132,26 +170,114 @@ async function handleAwakeMode(env: any, agent: any, agentId: string, validated:
   
   const response = await groqResponse.json() as any
   const generatedContent = response.choices[0]?.message?.content || 'No response generated'
+  console.log(`🔍 Generated content: ${generatedContent}`)
   
-  // Add the generated response to agent's turn history
-  const newTurn = {
-    role: 'model' as const,
-    parts: [{ text: generatedContent }]
+  // Extract next turn prompt from the generated content
+  const nextTurnPrompt = extractNextTurnPrompt(generatedContent)
+  
+  // Remove turn_prompt tags from the generated content for storage
+  const cleanGeneratedContent = removeTurnPromptTags(generatedContent)
+  
+  // Add the user prompt (turn_prompt) to agent's turn history
+  const userTurn = {
+    role: 'user' as const,
+    parts: [{ text: validated.turnPrompt }]
   }
   
+  // Add the cleaned generated response to agent's turn history
+  const modelTurn = {
+    role: 'model' as const,
+    parts: [{ text: cleanGeneratedContent }]
+  }
+
+  console.log(`🔍 User turn: ${JSON.stringify(userTurn)}`)
+  console.log(`🔍 Model turn: ${JSON.stringify(modelTurn)}`)
+  console.log(`🔍 Next turn prompt: ${nextTurnPrompt}`)
+  
   agent.turn_history = agent.turn_history || []
-  agent.turn_history.push(newTurn)
+  agent.turn_history.push(userTurn)
+  agent.turn_history.push(modelTurn)
+  
+  // Save the next turn prompt to agent data for next cycle
+  if (nextTurnPrompt) {
+    agent.turn_prompt = nextTurnPrompt
+    console.log(`💾 Saved next turn prompt: ${nextTurnPrompt}`)
+  }
   
   // Update agent in KV
   await env.SKAPP_AGENTS.put(`agent:${agentId}`, JSON.stringify(agent))
 }
 
 async function handleSleepMode(env: any, agent: any, agentId: string, validated: any) {
-  // For sleep mode, just summarize the existing history
+  console.log(`😴 Sleep mode activated for agent: ${agentId}`)
+  
+  // Update agent's current mode
+  agent.previousMode = agent.currentMode
+  agent.currentMode = validated.mode
+  agent.lastActivity = new Date().toISOString()
+  
+  // Clean up expired notes and thoughts
+  await cleanupMemory(agent, agentId)
+  
+  // Summarize the existing history
   await summarizeHistory(env, agent, agentId)
   
-  // Update agent in KV with summarized history
+  // Update agent in KV with cleaned memory and summarized history
   await env.SKAPP_AGENTS.put(`agent:${agentId}`, JSON.stringify(agent))
+  
+  console.log(`✅ Sleep mode cleanup completed for agent: ${agentId}`)
+}
+
+async function cleanupMemory(agent: any, agentId: string) {
+  try {
+    const now = new Date()
+    let notesRemoved = 0
+    let thoughtsRemoved = 0
+    
+    // Clean up expired notes
+    if (agent.system_notes && Array.isArray(agent.system_notes)) {
+      const originalNotesCount = agent.system_notes.length
+      
+      // Filter out expired notes
+      agent.system_notes = agent.system_notes.filter((note: any) => {
+        if (typeof note === 'string') {
+          // Legacy note format - remove it (treat as expired)
+          notesRemoved++
+          return false
+        }
+        
+        if (note.expires_at) {
+          const expiryDate = new Date(note.expires_at)
+          if (expiryDate <= now) {
+            // Note has expired
+            notesRemoved++
+            return false
+          }
+        }
+        
+        // Keep valid, non-expired notes
+        return true
+      })
+      
+      console.log(`🗑️ Removed ${notesRemoved} expired notes from agent ${agentId} (kept ${agent.system_notes.length}/${originalNotesCount})`)
+    }
+    
+    // Clear all thoughts (daily reset)
+    if (agent.system_thoughts && Array.isArray(agent.system_thoughts)) {
+      thoughtsRemoved = agent.system_thoughts.length
+      agent.system_thoughts = []
+      console.log(`🧹 Cleared ${thoughtsRemoved} thoughts from agent ${agentId} (daily reset)`)
+    }
+    
+    // Update agent's last activity
+    agent.lastActivity = now.toISOString()
+    
+    console.log(`🧽 Memory cleanup for agent ${agentId}: ${notesRemoved} expired notes removed, ${thoughtsRemoved} thoughts cleared`)
+    
+  } catch (error) {
+    console.error(`🚨 Memory cleanup error for agent ${agentId}:`, error)
+    // Continue with sleep mode even if cleanup fails
+  }
 }
 
 async function summarizeHistory(env: any, agent: any, agentId: string) {
@@ -225,6 +351,22 @@ async function summarizeHistory(env: any, agent: any, agentId: string) {
     console.error(`🚨 Sleep mode summarization error for agent ${agentId}:`, error)
     // Keep existing history on error
   }
+}
+
+function extractNextTurnPrompt(content: string): string | null {
+  const turnPromptMatch = content.match(/<turn_prompt>([\s\S]*?)<\/turn_prompt>/i)
+  if (turnPromptMatch && turnPromptMatch[1]) {
+    const nextTurnPrompt = turnPromptMatch[1].trim()
+    console.log(`🔍 Found turn prompt: ${nextTurnPrompt}`)
+    return nextTurnPrompt
+  }
+  console.log(`❌ No turn prompt found in content`)
+  return null
+}
+
+function removeTurnPromptTags(content: string): string {
+  // Remove <turn_prompt>...</turn_prompt> tags from the content
+  return content.replace(/<turn_prompt>[\s\S]*?<\/turn_prompt>/gi, '').trim()
 }
 
 

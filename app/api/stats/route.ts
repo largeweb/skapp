@@ -52,20 +52,34 @@ export async function GET(request: NextRequest) {
             activeAgents++
           }
           
+          // Count notes and tools
+          const notesCount = agent.system_notes?.length || 0
+          const toolsCount = agent.system_tools?.length || 0
+          
           // Count notes from today
-          if (agent.note) {
-            const todayNotes = agent.note.filter((note: any) => {
-              const noteDate = new Date(note.createdAt || note.timestamp).toISOString().split('T')[0]
-              return noteDate === today
+          if (agent.system_notes) {
+            const todayNotes = agent.system_notes.filter((note: any) => {
+              if (typeof note === 'string') {
+                // Legacy note format - count as today
+                return true
+              }
+              // New note format with expiration
+              const createdDate = new Date(note.created_at)
+              return createdDate.toISOString().split('T')[0] === today
             })
             notesToday += todayNotes.length
           }
           
           // Count tools executed today
-          if (agent.tools) {
-            const todayTools = agent.tools.filter((tool: any) => {
-              const toolDate = new Date(tool.createdAt || tool.timestamp).toISOString().split('T')[0]
-              return toolDate === today
+          if (agent.system_tools) {
+            const todayTools = agent.system_tools.filter((tool: any) => {
+              if (typeof tool === 'string') {
+                // Legacy tool format - count as today
+                return true
+              }
+              // New tool format with timestamp
+              const toolDate = new Date(tool.createdAt || tool.timestamp)
+              return toolDate.toISOString().split('T')[0] === today
             })
             toolsExecuted += todayTools.length
           }

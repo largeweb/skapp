@@ -25,7 +25,7 @@ export default function RootLayout({
         className="antialiased bg-gray-50 text-gray-900 min-h-screen font-sans"
       >
         <Navigation />
-        <main className="min-h-screen">
+        <main className="overflow-y-auto">
           {children}
         </main>
       </body>

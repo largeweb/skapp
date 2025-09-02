@@ -29,15 +29,12 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [memoryContext, setMemoryContext] = useState<MemoryContext>({ pmem: [], note: [], thgt: [], work: [] })
-  const [showMemorySidebar, setShowMemorySidebar] = useState(true)
   const [streamingMessage, setStreamingMessage] = useState<string>('')
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    fetchMemoryContext()
     scrollToBottom()
   }, [agentId])
 
@@ -47,33 +44,6 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const fetchMemoryContext = async () => {
-    try {
-      const response = await fetch(`/api/agents/${agentId}/memory?limit=3`)
-      if (response.ok) {
-        const data = await response.json() as any
-        
-        // Add comprehensive null checks and fallbacks
-        const memoryData = data?.memory || {}
-        const pmem = memoryData.pmem || []
-        const note = memoryData.note || []
-        const thgt = memoryData.thgt || []
-        const work = memoryData.work || []
-        
-        setMemoryContext({
-          pmem: Array.isArray(pmem) ? pmem.slice(0, 3).map((entry: any) => entry?.content || '').filter(Boolean) : [],
-          note: Array.isArray(note) ? note.slice(0, 3).map((entry: any) => entry?.content || '').filter(Boolean) : [],
-          thgt: Array.isArray(thgt) ? thgt.slice(0, 3).map((entry: any) => entry?.content || '').filter(Boolean) : [],
-          work: Array.isArray(work) ? work.slice(0, 3).map((entry: any) => entry?.content || '').filter(Boolean) : []
-        })
-      }
-    } catch (error) {
-      console.error('Failed to fetch memory context:', error)
-      // Set empty memory context on error
-      setMemoryContext({ pmem: [], note: [], thgt: [], work: [] })
-    }
   }
 
   const sendMessage = async (message: string, stream: boolean = false) => {
@@ -126,7 +96,6 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
     }
 
     setMessages(prev => [...prev, assistantMessage])
-    await fetchMemoryContext() // Refresh memory context
   }
 
   const sendStreamingMessage = async (message: string) => {
@@ -168,7 +137,6 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
                 timestamp: new Date().toISOString()
               }
               setMessages(prev => [...prev, finalMessage])
-              await fetchMemoryContext()
               return
             }
             
@@ -214,7 +182,7 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
   return (
     <div className={`flex h-full ${className}`}>
       {/* Main Chat Area */}
-      <div className={`flex flex-col ${showMemorySidebar ? 'flex-1' : 'w-full'}`}>
+      <div className={`flex flex-col w-full`}>
         {/* Chat Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center space-x-3">
@@ -226,12 +194,6 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
               <p className="text-sm text-gray-500">AI Agent</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowMemorySidebar(!showMemorySidebar)}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            {showMemorySidebar ? '📋' : '🧠'}
-          </button>
         </div>
 
         {/* Messages Area */}
@@ -337,88 +299,6 @@ export default function ChatInterface({ agentId, agentName, className = '' }: Ch
           </form>
         </div>
       </div>
-
-      {/* Memory Context Sidebar */}
-      <AnimatePresence>
-        {showMemorySidebar && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 300, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            className="border-l border-gray-200 bg-gray-50 overflow-hidden"
-          >
-            <div className="p-4 h-full overflow-y-auto">
-              <h3 className="font-semibold text-gray-900 mb-4">Memory Context</h3>
-              
-              <div className="space-y-4">
-                {/* Permanent Memory */}
-                <div className="bg-white p-3 rounded-lg border border-blue-200">
-                  <h4 className="font-medium text-blue-700 mb-2">🧠 Permanent Memory</h4>
-                  {memoryContext.pmem.length > 0 ? (
-                    <div className="space-y-2">
-                      {memoryContext.pmem.map((content, index) => (
-                        <div key={index} className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                          {content}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No permanent memory</p>
-                  )}
-                </div>
-
-                {/* Notes */}
-                <div className="bg-white p-3 rounded-lg border border-blue-200">
-                  <h4 className="font-medium text-blue-700 mb-2">📝 Recent Notes</h4>
-                  {memoryContext.note.length > 0 ? (
-                    <div className="space-y-2">
-                      {memoryContext.note.map((content, index) => (
-                        <div key={index} className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                          {content}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No recent notes</p>
-                  )}
-                </div>
-
-                {/* Thoughts */}
-                <div className="bg-white p-3 rounded-lg border border-blue-200">
-                  <h4 className="font-medium text-blue-700 mb-2">💭 Recent Thoughts</h4>
-                  {memoryContext.thgt.length > 0 ? (
-                    <div className="space-y-2">
-                      {memoryContext.thgt.map((content, index) => (
-                        <div key={index} className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                          {content}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No recent thoughts</p>
-                  )}
-                </div>
-
-                {/* Work Items */}
-                <div className="bg-white p-3 rounded-lg border border-blue-200">
-                  <h4 className="font-medium text-blue-700 mb-2">⚡ Recent Work</h4>
-                  {memoryContext.work.length > 0 ? (
-                    <div className="space-y-2">
-                      {memoryContext.work.map((content, index) => (
-                        <div key={index} className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                          {content}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No recent work</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
