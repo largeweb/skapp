@@ -11,9 +11,15 @@ interface MemoryEntry {
   metadata?: any
 }
 
+interface NoteEntry {
+  content: string
+  created_at: string
+  expires_at: string
+}
+
 interface MemoryData {
   pmem: string[]
-  note: string[]
+  note: NoteEntry[]
   thgt: string[]
   tools: string[]
 }
@@ -146,8 +152,9 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     }
   }
 
-  const startEditing = (index: number, content: string) => {
+  const startEditing = (index: number, entry: any) => {
     setEditingIndex(index)
+    const content = typeof entry === 'string' ? entry : entry.content || ''
     setEditContent(content)
   }
 
@@ -164,9 +171,15 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     { id: 'sms_operator', name: 'SMS Operator', description: 'Send SMS messages' }
   ]
 
-  const filteredMemory = (memory[activeLayer] || []).filter(entry =>
-    entry.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredMemory = (memory[activeLayer] || []).filter((entry: any) => {
+    if (typeof entry === 'string') {
+      return entry.toLowerCase().includes(searchTerm.toLowerCase())
+    }
+    if (entry.content) {
+      return entry.content.toLowerCase().includes(searchTerm.toLowerCase())
+    }
+    return false
+  })
 
   const layerConfig = {
     pmem: {
@@ -216,6 +229,17 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
     return `${Math.floor(diffInMinutes / 1440)}d ago`
+  }
+
+  const getTimeUntilExpiry = (expiryDateString: string) => {
+    const now = new Date()
+    const expiry = new Date(expiryDateString)
+    const diffInMinutes = Math.floor((expiry.getTime() - now.getTime()) / (1000 * 60))
+    
+    if (diffInMinutes < 0) return 'Expired'
+    if (diffInMinutes < 60) return `${diffInMinutes}m left`
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h left`
+    return `${Math.floor(diffInMinutes / 1440)}d left`
   }
 
   if (loading) {
@@ -403,7 +427,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                     const tool = availableTools.find(t => t.id === toolId)
                     return tool ? (
                       <motion.div
-                        key={toolId}
+                        key={toolId as string}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
@@ -418,7 +442,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                           <button
                             onClick={() => {
                               // Find the index of the tool in the memory array
-                              const toolIndex = (memory.tools || []).indexOf(toolId)
+                              const toolIndex = (memory.tools || []).indexOf(toolId as string)
                               if (toolIndex !== -1) {
                                 removeMemoryEntry('tools', toolIndex)
                               }
@@ -433,64 +457,75 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                   })}
                 </div>
               ) : (
-                // Regular display for other memory types
-                filteredMemory.map((entry, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`p-4 rounded-lg border ${layerConfig[activeLayer].borderColor} bg-white shadow-sm hover:shadow-md transition-shadow`}
-                >
-                  <div className="text-gray-800 whitespace-pre-wrap">
-                    {editingIndex === index ? (
-                      <textarea
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        rows={4}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 resize-none"
-                      />
-                    ) : (
-                      entry
-                    )}
-                  </div>
-                  <div className="flex justify-end space-x-3 mt-2">
-                    {editingIndex === index && (
-                      <>
-                        <button
-                          onClick={() => editMemoryEntry(activeLayer, index, editContent)}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={cancelEditing}
-                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg transition-colors hover:bg-gray-400 focus-visible:ring-2 focus-visible:ring-gray-500"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    )}
-                    {editingIndex !== index && (
-                      <>
-                        <button
-                          onClick={() => startEditing(index, entry)}
-                          className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-yellow-500"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => removeMemoryEntry(activeLayer, index)}
-                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-red-500"
-                        >
-                          Remove
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </motion.div>
-              ))
+                filteredMemory.map((entry, index) => {
+                  const entryContent = typeof entry === 'string' ? entry : entry.content
+                  const entryKey = typeof entry === 'string' ? `${index}-${entry}` : `${index}-${entry.content}`
+                  
+                  return (
+                    <motion.div
+                      key={entryKey}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`p-4 rounded-lg border ${layerConfig[activeLayer].borderColor} bg-white shadow-sm hover:shadow-md transition-shadow`}
+                    >
+                      <div className="text-gray-800 whitespace-pre-wrap">
+                        {editingIndex === index ? (
+                          <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            rows={4}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 resize-none"
+                          />
+                        ) : (
+                          <div>
+                            <div className="mb-2">{entryContent}</div>
+                            {activeLayer === 'note' && typeof entry !== 'string' && entry.expires_at && (
+                              <div className="text-sm text-gray-500">
+                                Expires: {formatDate(entry.expires_at)} ({getTimeUntilExpiry(entry.expires_at)})
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex justify-end space-x-3 mt-2">
+                        {editingIndex === index && (
+                          <>
+                            <button
+                              onClick={() => editMemoryEntry(activeLayer, index, editContent)}
+                              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={cancelEditing}
+                              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg transition-colors hover:bg-gray-400 focus-visible:ring-2 focus-visible:ring-gray-500"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                        {editingIndex !== index && (
+                          <>
+                            <button
+                              onClick={() => startEditing(index, entry)}
+                              className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-yellow-500"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => removeMemoryEntry(activeLayer, index)}
+                              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-red-500"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </motion.div>
+                  )
+                })
               )}
             </div>
           )}

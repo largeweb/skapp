@@ -205,7 +205,57 @@ function preparePayload(agentId: string, agent: AgentRecord, mode: Mode, estTime
   
   // 3. Weekly Notes (7-day persistence, weekly purpose)
   if (agent.note && agent.note.length > 0) {
-    systemPromptParts.push(`WEEKLY NOTES (7-day persistence):\n${agent.note.join('\n')}`)
+    const now = new Date()
+    const notesWithExpiry = agent.note.map((note: any) => {
+      if (typeof note === 'string') {
+        // Legacy note format - treat as expiring soon
+        return { content: note, expires_at: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString() }
+      }
+      return note
+    })
+    
+    // Sort notes by expiration (expiring soon first)
+    const sortedNotes = notesWithExpiry.sort((a: any, b: any) => {
+      const aExpiry = new Date(a.expires_at || 0)
+      const bExpiry = new Date(b.expires_at || 0)
+      return aExpiry.getTime() - bExpiry.getTime()
+    })
+    
+    // Group notes by urgency
+    const urgentNotes = sortedNotes.filter((note: any) => {
+      const expiry = new Date(note.expires_at)
+      const hoursUntilExpiry = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60)
+      return hoursUntilExpiry <= 24 // Expires within 24 hours
+    })
+    
+    const regularNotes = sortedNotes.filter((note: any) => {
+      const expiry = new Date(note.expires_at)
+      const hoursUntilExpiry = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60)
+      return hoursUntilExpiry > 24 // Expires in more than 24 hours
+    })
+    
+    let notesSection = 'WEEKLY NOTES (7-day persistence):\n'
+    
+    if (urgentNotes.length > 0) {
+      notesSection += '🚨 URGENT - EXPIRING SOON:\n'
+      urgentNotes.forEach((note: any) => {
+        const expiry = new Date(note.expires_at)
+        const hoursUntilExpiry = Math.max(0, (expiry.getTime() - now.getTime()) / (1000 * 60 * 60))
+        notesSection += `• ${note.content} (expires in ${Math.round(hoursUntilExpiry)}h)\n`
+      })
+      notesSection += '\n'
+    }
+    
+    if (regularNotes.length > 0) {
+      notesSection += '📝 REGULAR NOTES:\n'
+      regularNotes.forEach((note: any) => {
+        const expiry = new Date(note.expires_at)
+        const daysUntilExpiry = Math.max(0, (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        notesSection += `• ${note.content} (expires in ${Math.round(daysUntilExpiry)}d)\n`
+      })
+    }
+    
+    systemPromptParts.push(notesSection)
   }
   
   // 4. Daily Thoughts (1-day persistence, daily goals)

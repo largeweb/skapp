@@ -5,7 +5,8 @@ import { z } from 'zod'
 
 // Simple validation schema for memory content
 const MemoryContentSchema = z.object({
-  content: z.string().min(1).max(2000)
+  content: z.string().min(1).max(2000),
+  expires_in_days: z.number().int().min(1).max(365).optional().default(7)
 })
 
 const MemoryEditSchema = z.object({
@@ -136,8 +137,26 @@ export async function POST(
     if (!agent.thgt) agent.thgt = []
     if (!agent.tools) agent.tools = []
     
-    // Add content to the appropriate memory array
-    agent[layer].push(validated.content)
+    // Create memory entry with appropriate structure
+    let memoryEntry: any
+    
+    if (layer === 'note') {
+      // Notes get expiration dates
+      const now = new Date()
+      const expiresAt = new Date(now.getTime() + (validated.expires_in_days * 24 * 60 * 60 * 1000))
+      
+      memoryEntry = {
+        content: validated.content,
+        created_at: now.toISOString(),
+        expires_at: expiresAt.toISOString()
+      }
+    } else {
+      // Other memory types just get content
+      memoryEntry = validated.content
+    }
+    
+    // Add to appropriate memory array
+    agent[layer].push(memoryEntry)
     
     // Update agent's last activity
     agent.lastActivity = new Date().toISOString()
@@ -147,7 +166,7 @@ export async function POST(
     
     return Response.json({ 
       success: true,
-      content: validated.content,
+      content: memoryEntry,
       message: 'Memory entry added successfully' 
     }, {
       status: 201,
