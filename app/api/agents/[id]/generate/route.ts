@@ -92,6 +92,14 @@ export async function POST(
 }
 
 async function handleAwakeMode(env: any, agent: any, agentId: string, validated: any) {
+  // Check if agent just woke up from sleep mode
+  const justWokeUp = agent.currentMode === 'sleep' && validated.mode === 'awake'
+  
+  // Update agent's current mode
+  agent.previousMode = agent.currentMode
+  agent.currentMode = validated.mode
+  agent.lastActivity = new Date().toISOString()
+  
   // Convert turnHistory to conversation format for Groq API
   const messages = [
     { 
@@ -105,7 +113,15 @@ IMPORTANT INSTRUCTIONS:
 - Always end your response with a <turn_prompt> tag containing the next specific step
 - The next step should be concrete and actionable
 - If you've achieved the goal, indicate completion in your response
-- Be strategic and methodical in your approach`
+- Be strategic and methodical in your approach${justWokeUp ? `
+
+MEMORY STATUS UPDATE:
+- You have just woken up from sleep mode
+- Expired notes have been automatically removed from your memory
+- All previous thoughts have been cleared for the new day
+- Your permanent memory and tools remain intact
+- You can now start fresh with new notes and thoughts for today
+- Focus on current priorities and immediate next steps` : ''}`
     }
   ]
   
@@ -129,6 +145,7 @@ Please proceed with this task and show your progress toward the goal.`
   })
 
   console.log(`🔍 Messages for Groq: ${JSON.stringify(messages, null, 2)}`)
+  console.log(`🌅 Agent ${agentId} mode: ${validated.mode}${justWokeUp ? ' (just woke up)' : ''}`)
   
   // Call Groq API
   const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -192,11 +209,75 @@ Please proceed with this task and show your progress toward the goal.`
 }
 
 async function handleSleepMode(env: any, agent: any, agentId: string, validated: any) {
-  // For sleep mode, just summarize the existing history
+  console.log(`😴 Sleep mode activated for agent: ${agentId}`)
+  
+  // Update agent's current mode
+  agent.previousMode = agent.currentMode
+  agent.currentMode = validated.mode
+  agent.lastActivity = new Date().toISOString()
+  
+  // Clean up expired notes and thoughts
+  await cleanupMemory(agent, agentId)
+  
+  // Summarize the existing history
   await summarizeHistory(env, agent, agentId)
   
-  // Update agent in KV with summarized history
+  // Update agent in KV with cleaned memory and summarized history
   await env.SKAPP_AGENTS.put(`agent:${agentId}`, JSON.stringify(agent))
+  
+  console.log(`✅ Sleep mode cleanup completed for agent: ${agentId}`)
+}
+
+async function cleanupMemory(agent: any, agentId: string) {
+  try {
+    const now = new Date()
+    let notesRemoved = 0
+    let thoughtsRemoved = 0
+    
+    // Clean up expired notes
+    if (agent.system_notes && Array.isArray(agent.system_notes)) {
+      const originalNotesCount = agent.system_notes.length
+      
+      // Filter out expired notes
+      agent.system_notes = agent.system_notes.filter((note: any) => {
+        if (typeof note === 'string') {
+          // Legacy note format - remove it (treat as expired)
+          notesRemoved++
+          return false
+        }
+        
+        if (note.expires_at) {
+          const expiryDate = new Date(note.expires_at)
+          if (expiryDate <= now) {
+            // Note has expired
+            notesRemoved++
+            return false
+          }
+        }
+        
+        // Keep valid, non-expired notes
+        return true
+      })
+      
+      console.log(`🗑️ Removed ${notesRemoved} expired notes from agent ${agentId} (kept ${agent.system_notes.length}/${originalNotesCount})`)
+    }
+    
+    // Clear all thoughts (daily reset)
+    if (agent.system_thoughts && Array.isArray(agent.system_thoughts)) {
+      thoughtsRemoved = agent.system_thoughts.length
+      agent.system_thoughts = []
+      console.log(`🧹 Cleared ${thoughtsRemoved} thoughts from agent ${agentId} (daily reset)`)
+    }
+    
+    // Update agent's last activity
+    agent.lastActivity = now.toISOString()
+    
+    console.log(`🧽 Memory cleanup for agent ${agentId}: ${notesRemoved} expired notes removed, ${thoughtsRemoved} thoughts cleared`)
+    
+  } catch (error) {
+    console.error(`🚨 Memory cleanup error for agent ${agentId}:`, error)
+    // Continue with sleep mode even if cleanup fails
+  }
 }
 
 async function summarizeHistory(env: any, agent: any, agentId: string) {
