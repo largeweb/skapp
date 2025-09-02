@@ -145,8 +145,6 @@ Please proceed with this task and show your progress toward the goal.`
     })
   })
   
-  console.log("groqResponse=========>", groqResponse)
-  
   if (!groqResponse.ok) {
     const errorData = await groqResponse.text()
     console.error('Groq API error:', errorData)
