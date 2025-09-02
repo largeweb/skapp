@@ -28,6 +28,10 @@ interface AgentRecord {
       text: string
     }>
   }>
+  system_permanent_memory?: string[]
+  system_notes?: string[]
+  system_thoughts?: string[]
+  system_tools?: string[]
 }
 
 const OrchestrationRequestSchema = z.object({
@@ -199,14 +203,14 @@ function preparePayload(agentId: string, agent: AgentRecord, mode: Mode, estTime
   }
   
   // 2. Permanent Memory (Static, user-defined, persistent)
-  if (agent.pmem && agent.pmem.length > 0) {
-    systemPromptParts.push(`PERMANENT MEMORY (Static Knowledge):\n${agent.pmem.join('\n')}`)
+  if (agent.system_permanent_memory && agent.system_permanent_memory.length > 0) {
+    systemPromptParts.push(`PERMANENT MEMORY (Static Knowledge):\n${agent.system_permanent_memory.join('\n')}`)
   }
   
   // 3. Weekly Notes (7-day persistence, weekly purpose)
-  if (agent.note && agent.note.length > 0) {
+  if (agent.system_notes && agent.system_notes.length > 0) {
     const now = new Date()
-    const notesWithExpiry = agent.note.map((note: any) => {
+    const notesWithExpiry = agent.system_notes.map((note: any) => {
       if (typeof note === 'string') {
         // Legacy note format - treat as expiring soon
         return { content: note, expires_at: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString() }
@@ -259,13 +263,13 @@ function preparePayload(agentId: string, agent: AgentRecord, mode: Mode, estTime
   }
   
   // 4. Daily Thoughts (1-day persistence, daily goals)
-  if (agent.thgt && agent.thgt.length > 0) {
-    systemPromptParts.push(`DAILY THOUGHTS (1-day persistence):\n${agent.thgt.join('\n')}`)
+  if (agent.system_thoughts && agent.system_thoughts.length > 0) {
+    systemPromptParts.push(`DAILY THOUGHTS (1-day persistence):\n${agent.system_thoughts.join('\n')}`)
   }
   
   // 5. Available Tools
-  if (agent.tools && agent.tools.length > 0) {
-    systemPromptParts.push(`AVAILABLE TOOLS: ${agent.tools.join(', ')}`)
+  if (agent.system_tools && agent.system_tools.length > 0) {
+    systemPromptParts.push(`AVAILABLE TOOLS: ${agent.system_tools.join(', ')}`)
   }
   
   // 6. Current Time Context

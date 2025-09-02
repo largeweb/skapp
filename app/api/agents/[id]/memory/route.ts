@@ -10,12 +10,13 @@ const MemoryContentSchema = z.object({
 })
 
 const MemoryEditSchema = z.object({
+  layer: z.enum(['system_permanent_memory', 'system_notes', 'system_thoughts', 'system_tools']),
   content: z.string().min(1).max(2000),
   index: z.number().int().min(0)
 })
 
 const MemoryQuerySchema = z.object({
-  layer: z.enum(['pmem', 'note', 'thgt', 'tools']).optional(),
+  layer: z.enum(['system_permanent_memory', 'system_notes', 'system_thoughts', 'system_tools']).optional(),
   limit: z.string().optional().transform(val => parseInt(val || '50')),
   offset: z.string().optional().transform(val => parseInt(val || '0'))
 })
@@ -46,10 +47,10 @@ export async function GET(
     
     // Return memory arrays from agent data
     const memory = {
-      pmem: agent.pmem || [],
-      note: agent.note || [],
-      thgt: agent.thgt || [],
-      tools: agent.tools || []
+      system_permanent_memory: agent.system_permanent_memory || [],
+      system_notes: agent.system_notes || [],
+      system_thoughts: agent.system_thoughts || [],
+      system_tools: agent.system_tools || []
     }
     
     // If specific layer requested, only return that layer
@@ -70,10 +71,10 @@ export async function GET(
       agentId: id,
       memory,
       stats: {
-        pmem: memory.pmem.length,
-        note: memory.note.length,
-        thgt: memory.thgt.length,
-        tools: memory.tools.length
+        system_permanent_memory: memory.system_permanent_memory.length,
+        system_notes: memory.system_notes.length,
+        system_thoughts: memory.system_thoughts.length,
+        system_tools: memory.system_tools.length
       }
     }, {
       headers: {
@@ -108,9 +109,9 @@ export async function POST(
     const url = new URL(request.url)
     const layer = url.searchParams.get('layer')
     
-    if (!layer || !['pmem', 'note', 'thgt', 'tools'].includes(layer)) {
+    if (!layer || !['system_permanent_memory', 'system_notes', 'system_thoughts', 'system_tools'].includes(layer)) {
       return Response.json({ 
-        error: 'Invalid memory layer. Must be pmem, note, thgt, or tools',
+        error: 'Invalid memory layer. Must be system_permanent_memory, system_notes, system_thoughts, or system_tools',
         code: 'INVALID_MEMORY_LAYER'
       }, { status: 400 })
     }
@@ -132,15 +133,15 @@ export async function POST(
     const agent = JSON.parse(agentData)
     
     // Initialize memory arrays if they don't exist
-    if (!agent.pmem) agent.pmem = []
-    if (!agent.note) agent.note = []
-    if (!agent.thgt) agent.thgt = []
-    if (!agent.tools) agent.tools = []
+    if (!agent.system_permanent_memory) agent.system_permanent_memory = []
+    if (!agent.system_notes) agent.system_notes = []
+    if (!agent.system_thoughts) agent.system_thoughts = []
+    if (!agent.system_tools) agent.system_tools = []
     
     // Create memory entry with appropriate structure
     let memoryEntry: any
     
-    if (layer === 'note') {
+    if (layer === 'system_notes') {
       // Notes get expiration dates
       const now = new Date()
       const expiresAt = new Date(now.getTime() + (validated.expires_in_days * 24 * 60 * 60 * 1000))
@@ -202,9 +203,9 @@ export async function PUT(
     const url = new URL(request.url)
     const layer = url.searchParams.get('layer')
     
-    if (!layer || !['pmem', 'note', 'thgt', 'tools'].includes(layer)) {
+    if (!layer || !['system_permanent_memory', 'system_notes', 'system_thoughts', 'system_tools'].includes(layer)) {
       return Response.json({ 
-        error: 'Invalid memory layer. Must be pmem, note, thgt, or tools',
+        error: 'Invalid memory layer. Must be system_permanent_memory, system_notes, system_thoughts, or system_tools',
         code: 'INVALID_MEMORY_LAYER'
       }, { status: 400 })
     }
@@ -226,13 +227,13 @@ export async function PUT(
     const agent = JSON.parse(agentData)
     
     // Initialize memory arrays if they don't exist
-    if (!agent.pmem) agent.pmem = []
-    if (!agent.note) agent.note = []
-    if (!agent.thgt) agent.thgt = []
-    if (!agent.tools) agent.tools = []
+    if (!agent.system_permanent_memory) agent.system_permanent_memory = []
+    if (!agent.system_notes) agent.system_notes = []
+    if (!agent.system_thoughts) agent.system_thoughts = []
+    if (!agent.system_tools) agent.system_tools = []
     
     // Check if index is valid
-    const memoryArray = agent[layer]
+    const memoryArray = agent[validated.layer]
     if (validated.index >= memoryArray.length) {
       return Response.json({ 
         error: 'Memory index out of bounds',
@@ -288,9 +289,9 @@ export async function DELETE(
     const layer = url.searchParams.get('layer')
     const index = url.searchParams.get('index')
     
-    if (!layer || !['pmem', 'note', 'thgt', 'tools'].includes(layer)) {
+    if (!layer || !['system_permanent_memory', 'system_notes', 'system_thoughts', 'system_tools'].includes(layer)) {
       return Response.json({ 
-        error: 'Invalid memory layer. Must be pmem, note, thgt, or tools',
+        error: 'Invalid memory layer. Must be system_permanent_memory, system_notes, system_thoughts, or system_tools',
         code: 'INVALID_MEMORY_LAYER'
       }, { status: 400 })
     }
@@ -317,10 +318,10 @@ export async function DELETE(
     const agent = JSON.parse(agentData)
     
     // Initialize memory arrays if they don't exist
-    if (!agent.pmem) agent.pmem = []
-    if (!agent.note) agent.note = []
-    if (!agent.thgt) agent.thgt = []
-    if (!agent.tools) agent.tools = []
+    if (!agent.system_permanent_memory) agent.system_permanent_memory = []
+    if (!agent.system_notes) agent.system_notes = []
+    if (!agent.system_thoughts) agent.system_thoughts = []
+    if (!agent.system_tools) agent.system_tools = []
     
     // Check if index is valid
     const memoryArray = agent[layer]

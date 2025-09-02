@@ -129,106 +129,95 @@ export async function GET(request: NextRequest) {
             }
           }
           
-          // Add recent notes
-          if (agent.note) {
-            const recentNotes = agent.note
-              .filter((note: any) => {
-                const noteTime = new Date(note.createdAt || note.timestamp)
-                const timeDiff = now.getTime() - noteTime.getTime()
-                return timeDiff < 60 * 60 * 1000 // Last hour
-              })
-              .slice(0, 3) // Limit to 3 most recent notes
-            
-            recentNotes.forEach((note: any, index: number) => {
-              const noteTime = new Date(note.createdAt || note.timestamp)
+                  // Process notes
+        if (agent.system_notes) {
+          const recentNotes = agent.system_notes
+            .filter((note: any) => {
+              if (typeof note === 'string') return true
+              const noteDate = new Date(note.created_at)
+              const timeDiff = now.getTime() - noteDate.getTime()
+              return timeDiff < 60 * 60 * 1000 // Last hour
+            })
+            .slice(0, 3)
+            .map((note: any) => {
+              const noteTime = new Date(typeof note === 'string' ? agent.lastActivity : note.created_at)
               const timeDiff = now.getTime() - noteTime.getTime()
               const timeDiffMins = Math.floor(timeDiff / (1000 * 60))
               
-              allActivities.push({
-                id: `${agentId}-note-${noteTime.getTime()}-${index}`,
+              return {
+                id: `${agentId}-note-${noteTime.getTime()}`,
                 time: `${timeDiffMins}m ago`,
                 agent: agent.name,
                 agentId,
                 action: 'took note',
-                detail: `"${note.content?.substring(0, 50)}${note.content?.length > 50 ? '...' : ''}"`,
-                type: 'note',
+                detail: `"${(typeof note === 'string' ? note : note.content)?.substring(0, 50)}${(typeof note === 'string' ? note : note.content)?.length > 50 ? '...' : ''}"`,
+                type: 'note' as const,
                 timestamp: noteTime.getTime()
-              })
+              }
             })
-          }
           
-          // Add recent thoughts
-          if (agent.thgt) {
-            const recentThoughts = agent.thgt
-              .filter((thought: any) => {
-                const thoughtTime = new Date(thought.createdAt || thought.timestamp)
-                const timeDiff = now.getTime() - thoughtTime.getTime()
-                return timeDiff < 60 * 60 * 1000 // Last hour
-              })
-              .slice(0, 2) // Limit to 2 most recent thoughts
-            
-            recentThoughts.forEach((thought: any, index: number) => {
-              const thoughtTime = new Date(thought.createdAt || thought.timestamp)
+          allActivities.push(...recentNotes)
+        }
+          
+                  // Process thoughts
+        if (agent.system_thoughts) {
+          const recentThoughts = agent.system_thoughts
+            .filter((thought: any) => {
+              if (typeof thought === 'string') return true
+              const thoughtDate = new Date(thought.created_at)
+              const timeDiff = now.getTime() - thoughtDate.getTime()
+              return timeDiff < 60 * 60 * 1000 // Last hour
+            })
+            .slice(0, 2)
+            .map((thought: any) => {
+              const thoughtTime = new Date(typeof thought === 'string' ? agent.lastActivity : thought.created_at)
               const timeDiff = now.getTime() - thoughtTime.getTime()
               const timeDiffMins = Math.floor(timeDiff / (1000 * 60))
               
-              allActivities.push({
-                id: `${agentId}-thought-${thoughtTime.getTime()}-${index}`,
+              return {
+                id: `${agentId}-thought-${thoughtTime.getTime()}`,
                 time: `${timeDiffMins}m ago`,
                 agent: agent.name,
                 agentId,
                 action: 'had thought',
-                detail: `"${thought.content?.substring(0, 50)}${thought.content?.length > 50 ? '...' : ''}"`,
-                type: 'thought',
+                detail: `"${(typeof thought === 'string' ? thought : thought.content)?.substring(0, 50)}${(typeof thought === 'string' ? thought : thought.content)?.length > 50 ? '...' : ''}"`,
+                type: 'thought' as const,
                 timestamp: thoughtTime.getTime()
-              })
+              }
             })
-          }
           
-          // Add recent tool usage
-          if (agent.tools) {
-            const recentTools = agent.tools
-              .filter((work: any) => {
-                const workTime = new Date(work.createdAt || work.timestamp)
-                const timeDiff = now.getTime() - workTime.getTime()
-                return timeDiff < 60 * 60 * 1000 // Last hour
-              })
-              .slice(0, 3) // Limit to 3 most recent work items
-            
-            recentTools.forEach((work: any, index: number) => {
-              const workTime = new Date(work.createdAt || work.timestamp)
-              const timeDiff = now.getTime() - workTime.getTime()
+          allActivities.push(...recentThoughts)
+        }
+        
+        // Process tools
+        if (agent.system_tools) {
+          const recentTools = agent.system_tools
+            .filter((tool: any) => {
+              if (typeof tool === 'string') return true
+              const toolDate = new Date(tool.createdAt || tool.timestamp)
+              const timeDiff = now.getTime() - toolDate.getTime()
+              return timeDiff < 60 * 60 * 1000 // Last hour
+            })
+            .slice(0, 3)
+            .map((tool: any) => {
+              const toolTime = new Date(typeof tool === 'string' ? agent.lastActivity : (tool.createdAt || tool.timestamp))
+              const timeDiff = now.getTime() - toolTime.getTime()
               const timeDiffMins = Math.floor(timeDiff / (1000 * 60))
               
-              let action = 'used tool'
-              let detail = work.tool || 'Unknown tool'
-              
-              if (work.tool === 'web_search') {
-                action = 'used web_search()'
-                detail = work.query || 'Searched for information'
-              } else if (work.tool === 'discord_msg') {
-                action = 'posted to Discord'
-                detail = work.channel || '#general'
-              } else if (work.tool === 'take_note') {
-                action = 'took note'
-                detail = `"${work.content?.substring(0, 50)}${work.content?.length > 50 ? '...' : ''}"`
-              } else if (work.tool === 'take_thought') {
-                action = 'had thought'
-                detail = `"${work.content?.substring(0, 50)}${work.content?.length > 50 ? '...' : ''}"`
-              }
-              
-              allActivities.push({
-                id: `${agentId}-work-${workTime.getTime()}-${index}`,
+              return {
+                id: `${agentId}-work-${toolTime.getTime()}`,
                 time: `${timeDiffMins}m ago`,
                 agent: agent.name,
                 agentId,
-                action,
-                detail,
-                type: 'tool',
-                timestamp: workTime.getTime()
-              })
+                action: 'used tool',
+                detail: typeof tool === 'string' ? tool : (tool.name || tool.content || 'Unknown tool'),
+                type: 'tool' as const,
+                timestamp: toolTime.getTime()
+              }
             })
-          }
+          
+          allActivities.push(...recentTools)
+        }
         }
       } catch (error) {
         console.error(`Failed to process agent ${key.name}:`, error)

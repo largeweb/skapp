@@ -18,10 +18,10 @@ interface NoteEntry {
 }
 
 interface MemoryData {
-  pmem: string[]
-  note: NoteEntry[]
-  thgt: string[]
-  tools: string[]
+  system_permanent_memory: string[]
+  system_notes: NoteEntry[]
+  system_thoughts: string[]
+  system_tools: string[]
 }
 
 interface MemoryViewerProps {
@@ -30,10 +30,10 @@ interface MemoryViewerProps {
 }
 
 export default function MemoryViewer({ agentId, className = '' }: MemoryViewerProps) {
-  const [memory, setMemory] = useState<MemoryData>({ pmem: [], note: [], thgt: [], tools: [] })
+  const [memory, setMemory] = useState<MemoryData>({ system_permanent_memory: [], system_notes: [], system_thoughts: [], system_tools: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeLayer, setActiveLayer] = useState<'pmem' | 'note' | 'thgt' | 'tools'>('pmem')
+  const [activeLayer, setActiveLayer] = useState<'system_permanent_memory' | 'system_notes' | 'system_thoughts' | 'system_tools'>('system_permanent_memory')
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -53,15 +53,15 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
       
       // Use the new flat data structure
       setMemory({
-        pmem: data.pmem || [],
-        note: data.note || [],
-        thgt: data.thgt || [],
-        tools: data.tools || []
+        system_permanent_memory: data.system_permanent_memory || [],
+        system_notes: data.system_notes || [],
+        system_thoughts: data.system_thoughts || [],
+        system_tools: data.system_tools || []
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       // Set empty memory structure on error
-      setMemory({ pmem: [], note: [], thgt: [], tools: [] })
+      setMemory({ system_permanent_memory: [], system_notes: [], system_thoughts: [], system_tools: [] })
     } finally {
       setLoading(false)
     }
@@ -93,7 +93,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
 
   const addToolToAgent = async (toolId: string) => {
     try {
-      const response = await fetch(`/api/agents/${agentId}/memory?layer=tools`, {
+      const response = await fetch(`/api/agents/${agentId}/memory?layer=system_tools`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: toolId })
@@ -182,7 +182,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
   })
 
   const layerConfig = {
-    pmem: {
+    system_permanent_memory: {
       title: 'Permanent Memory',
       description: 'Core knowledge and persistent information',
       color: 'from-blue-500 to-blue-700',
@@ -190,7 +190,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
       borderColor: 'border-blue-200',
       icon: '🧠'
     },
-    note: {
+    system_notes: {
       title: 'Notes',
       description: 'Temporary notes and observations (7-day retention)',
       color: 'from-green-500 to-green-700',
@@ -198,7 +198,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
       borderColor: 'border-green-200',
       icon: '📝'
     },
-    thgt: {
+    system_thoughts: {
       title: 'Thoughts',
       description: 'Internal thoughts and insights (sleep reset)',
       color: 'from-purple-500 to-purple-700',
@@ -206,7 +206,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
       borderColor: 'border-purple-200',
       icon: '💭'
     },
-    tools: {
+    system_tools: {
       title: 'Tools',
       description: 'Available tools and capabilities',
       color: 'from-orange-500 to-orange-700',
@@ -268,7 +268,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
     <div className={`space-y-6 ${className}`}>
       {/* Layer Selector */}
       <div className="flex flex-wrap gap-2">
-        {(['pmem', 'note', 'thgt', 'tools'] as const).map((layer) => (
+        {(['system_permanent_memory', 'system_notes', 'system_thoughts', 'system_tools'] as const).map((layer) => (
           <motion.button
             key={layer}
             whileHover={{ scale: 1.05 }}
@@ -329,7 +329,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            {activeLayer === 'tools' ? (
+            {activeLayer === 'system_tools' ? (
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -342,7 +342,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                 
                 <div className="space-y-3">
                   {availableTools.map((tool) => {
-                    const isSelected = (memory.tools || []).includes(tool.id)
+                    const isSelected = (memory.system_tools || []).includes(tool.id)
                     
                     return (
                       <div 
@@ -355,9 +355,9 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                         onClick={() => {
                           if (isSelected) {
                             // Find the index of the tool in the memory array
-                            const toolIndex = (memory.tools || []).indexOf(tool.id)
+                            const toolIndex = (memory.system_tools || []).indexOf(tool.id)
                             if (toolIndex !== -1) {
-                              removeMemoryEntry('tools', toolIndex)
+                              removeMemoryEntry('system_tools', toolIndex)
                             }
                           } else {
                             addToolToAgent(tool.id)
@@ -372,9 +372,9 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                               onChange={() => {
                                 if (isSelected) {
                                   // Find the index of the tool in the memory array
-                                  const toolIndex = (memory.tools || []).indexOf(tool.id)
+                                  const toolIndex = (memory.system_tools || []).indexOf(tool.id)
                                   if (toolIndex !== -1) {
-                                    removeMemoryEntry('tools', toolIndex)
+                                    removeMemoryEntry('system_tools', toolIndex)
                                   }
                                 } else {
                                   addToolToAgent(tool.id)
@@ -420,7 +420,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
             </motion.div>
           ) : (
             <div className="space-y-3">
-              {activeLayer === 'tools' ? (
+              {activeLayer === 'system_tools' ? (
                 // Special display for tools
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredMemory.map((toolId, index) => {
@@ -442,9 +442,9 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                           <button
                             onClick={() => {
                               // Find the index of the tool in the memory array
-                              const toolIndex = (memory.tools || []).indexOf(toolId as string)
+                              const toolIndex = (memory.system_tools || []).indexOf(toolId as string)
                               if (toolIndex !== -1) {
-                                removeMemoryEntry('tools', toolIndex)
+                                removeMemoryEntry('system_tools', toolIndex)
                               }
                             }}
                             className="ml-2 text-red-500 hover:text-red-700 text-sm"
@@ -481,7 +481,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
                         ) : (
                           <div>
                             <div className="mb-2">{entryContent}</div>
-                            {activeLayer === 'note' && typeof entry !== 'string' && entry.expires_at && (
+                            {activeLayer === 'system_notes' && typeof entry !== 'string' && entry.expires_at && (
                               <div className="text-sm text-gray-500">
                                 Expires: {formatDate(entry.expires_at)} ({getTimeUntilExpiry(entry.expires_at)})
                               </div>

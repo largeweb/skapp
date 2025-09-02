@@ -158,6 +158,14 @@ export async function GET(request: Request) {
             if (!matchesSearch) continue
           }
           
+          // Calculate memory statistics
+          const memoryStats = {
+            system_permanent_memory: agent.system_permanent_memory?.length || 0,
+            system_notes: agent.system_notes?.length || 0,
+            system_thoughts: agent.system_thoughts?.length || 0,
+            system_tools: agent.system_tools?.length || 0
+          }
+          
           agents.push({
             id: agent.agentId,
             name: agent.name,
@@ -165,12 +173,7 @@ export async function GET(request: Request) {
             status: agent.currentMode || 'awake',
             lastActivity: agent.lastActivity || 'Unknown',
             createdAt: agent.createdAt,
-            memoryStats: {
-              pmem: agent.pmem?.length || 0,
-              note: agent.note?.length || 0,
-              thgt: agent.thgt?.length || 0,
-              tools: agent.tools?.length || 0
-            }
+            memoryStats: memoryStats
           })
         }
       } catch (error) {
@@ -265,10 +268,10 @@ export async function POST(request: Request) {
       agentId: validated.agentId,
       name: validated.name,
       description: validated.description,
-      pmem: validated.pmem || [],
-      note: validated.note || [],
-      thgt: validated.thgt || [],
-      tools: validated.tools || [],
+      system_permanent_memory: validated.pmem || [],
+      system_notes: validated.note || [],
+      system_thoughts: validated.thgt || [],
+      system_tools: validated.tools || [],
       turn_prompt: validated.turn_prompt || "",
       turn_history: validated.turn_history || [],
       participants: validated.participants || [],

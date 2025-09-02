@@ -43,6 +43,19 @@ export async function POST(
     
     console.log(`✅ Successfully initialized operational data for agent: ${id}`)
     
+    const response = {
+      agent_id: id,
+      status: 'operational_data_initialized',
+      message: 'Agent operational data has been reset',
+      timestamp: new Date().toISOString(),
+      system_permanent_memory_count: agent.system_permanent_memory?.length || 0,
+      system_notes_count: agent.system_notes?.length || 0,
+      system_thoughts_count: agent.system_thoughts?.length || 0,
+      system_tools_count: agent.system_tools?.length || 0,
+      turn_history_count: agent.turn_history?.length || 0,
+      turns_count: agent.turnsCount || 0
+    }
+    
     return Response.json({
       success: true,
       message: 'Agent operational data initialized successfully',

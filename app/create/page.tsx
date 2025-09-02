@@ -3,16 +3,16 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-type WizardStep = 'id' | 'description' | 'pmem' | 'tools' | 'review'
+type WizardStep = 'id' | 'description' | 'system_permanent_memory' | 'system_tools' | 'review'
 
 interface AgentData {
   agentId: string
   name: string
   description: string
-  pmem: string[]
-  note: string[]
-  thgt: string[]
-  tools: string[]
+  system_permanent_memory: string[]
+  system_notes: string[]
+  system_thoughts: string[]
+  system_tools: string[]
   turn_prompt: string
   turn_history: Array<{
     role: 'user' | 'model'
@@ -36,10 +36,10 @@ export default function CreateAgentPage() {
     agentId: '',
     name: '',
     description: '',
-    pmem: [],
-    note: [],
-    thgt: [],
-    tools: [],
+    system_permanent_memory: [],
+    system_notes: [],
+    system_thoughts: [],
+    system_tools: [],
     turn_prompt: '',
     turn_history: []
   })
@@ -102,7 +102,7 @@ Example format:
         try {
           const pmemData = JSON.parse(data.message)
           setGeneratedPmem(pmemData)
-          setAgentData(prev => ({ ...prev, pmem: pmemData }))
+          setAgentData(prev => ({ ...prev, system_permanent_memory: pmemData }))
         } catch (e) {
           console.error('Failed to parse pmem data:', e)
           setGeneratedPmem(['Failed to generate permanent memory'])
@@ -165,10 +165,23 @@ Example format:
     setError(null)
 
     try {
+      // Map the new field names to the backend API format
+      const agentPayload = {
+        agentId: agentData.agentId,
+        name: agentData.name,
+        description: agentData.description,
+        pmem: agentData.system_permanent_memory,
+        note: agentData.system_notes,
+        thgt: agentData.system_thoughts,
+        tools: agentData.system_tools,
+        turn_prompt: agentData.turn_prompt,
+        turn_history: agentData.turn_history
+      }
+
       const response = await fetch('/api/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(agentData)
+        body: JSON.stringify(agentPayload)
       })
 
       if (response.ok) {
@@ -188,7 +201,7 @@ Example format:
   }
 
   const nextStep = () => {
-    const steps: WizardStep[] = ['id', 'description', 'pmem', 'tools', 'review']
+    const steps: WizardStep[] = ['id', 'description', 'system_permanent_memory', 'system_tools', 'review']
     const currentIndex = steps.indexOf(currentStep)
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1])
@@ -196,7 +209,7 @@ Example format:
   }
 
   const prevStep = () => {
-    const steps: WizardStep[] = ['id', 'description', 'pmem', 'tools', 'review']
+    const steps: WizardStep[] = ['id', 'description', 'system_permanent_memory', 'system_tools', 'review']
     const currentIndex = steps.indexOf(currentStep)
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1])
@@ -205,8 +218,8 @@ Example format:
 
   const canProceedFromId = agentData.name.trim() && agentData.agentId.trim() && idAvailable === true
   const canProceedFromDescription = agentData.description.trim().length > 10
-  const canProceedFromPmem = agentData.pmem.length > 0
-  const canProceedFromTools = true // Tools are optional
+  const canProceedFromSystemPermanentMemory = agentData.system_permanent_memory.length > 0
+  const canProceedFromSystemTools = true // Tools are optional
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -280,9 +293,9 @@ Example format:
         variants={itemVariants}
         className="flex items-center justify-between mb-8"
       >
-        {['id', 'description', 'pmem', 'tools', 'review'].map((step, index) => {
+        {['id', 'description', 'system_permanent_memory', 'system_tools', 'review'].map((step, index) => {
           const isActive = step === currentStep
-          const isCompleted = ['id', 'description', 'pmem', 'tools', 'review'].indexOf(currentStep) > index
+          const isCompleted = ['id', 'description', 'system_permanent_memory', 'system_tools', 'review'].indexOf(currentStep) > index
           
           return (
             <div key={step} className="flex items-center">
@@ -524,7 +537,7 @@ Example format:
         )}
 
         {/* Step 3: PMEM */}
-        {currentStep === 'pmem' && (
+        {currentStep === 'system_permanent_memory' && (
           <motion.div
             variants={itemVariants}
             initial="hidden"
@@ -578,7 +591,7 @@ Example format:
                   Permanent Memory Items
                 </label>
                 <div className="space-y-2">
-                  {agentData.pmem.map((item, index) => (
+                  {agentData.system_permanent_memory.map((item, index) => (
                     <motion.div 
                       key={index}
                       className="flex items-center space-x-2"
@@ -590,17 +603,17 @@ Example format:
                         type="text"
                         value={item}
                         onChange={(e) => {
-                          const newPmem = [...agentData.pmem]
+                          const newPmem = [...agentData.system_permanent_memory]
                           newPmem[index] = e.target.value
-                          handleInputChange('pmem', newPmem)
+                          handleInputChange('system_permanent_memory', newPmem)
                         }}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Enter permanent memory item..."
                       />
                       <button
                         onClick={() => {
-                          const newPmem = agentData.pmem.filter((_, i) => i !== index)
-                          handleInputChange('pmem', newPmem)
+                          const newPmem = agentData.system_permanent_memory.filter((_, i) => i !== index)
+                          handleInputChange('system_permanent_memory', newPmem)
                         }}
                         className="px-2 py-2 text-red-600 hover:text-red-800"
                       >
@@ -611,8 +624,8 @@ Example format:
                 </div>
                 <button
                   onClick={() => {
-                    const newPmem = [...agentData.pmem, '']
-                    handleInputChange('pmem', newPmem)
+                    const newPmem = [...agentData.system_permanent_memory, '']
+                    handleInputChange('system_permanent_memory', newPmem)
                   }}
                   className="mt-2 text-sm text-blue-600 hover:text-blue-800"
                 >
@@ -633,7 +646,7 @@ Example format:
               </motion.button>
               <motion.button
                 onClick={nextStep}
-                disabled={!canProceedFromPmem}
+                disabled={!canProceedFromSystemPermanentMemory}
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -646,7 +659,7 @@ Example format:
         )}
 
         {/* Step 4: Tools */}
-        {currentStep === 'tools' && (
+        {currentStep === 'system_tools' && (
           <motion.div
             variants={itemVariants}
             initial="hidden"
@@ -665,7 +678,7 @@ Example format:
                 { id: 'discord_msg', name: 'Discord Messages', description: 'Send messages to Discord channels' },
                 { id: 'sms_operator', name: 'SMS Operator', description: 'Send SMS messages' }
               ].map((tool) => {
-                const isSelected = agentData.tools.includes(tool.id)
+                const isSelected = agentData.system_tools.includes(tool.id)
                 
                 return (
                   <div 
@@ -677,9 +690,9 @@ Example format:
                     }`}
                     onClick={() => {
                       const newTools = isSelected
-                        ? agentData.tools.filter(id => id !== tool.id)
-                        : [...agentData.tools, tool.id]
-                      handleInputChange('tools', newTools)
+                        ? agentData.system_tools.filter(id => id !== tool.id)
+                        : [...agentData.system_tools, tool.id]
+                      handleInputChange('system_tools', newTools)
                     }}
                   >
                     <div className="flex items-start space-x-3">
@@ -689,9 +702,9 @@ Example format:
                           checked={isSelected}
                           onChange={() => {
                             const newTools = isSelected
-                              ? agentData.tools.filter(id => id !== tool.id)
-                              : [...agentData.tools, tool.id]
-                            handleInputChange('tools', newTools)
+                              ? agentData.system_tools.filter(id => id !== tool.id)
+                              : [...agentData.system_tools, tool.id]
+                            handleInputChange('system_tools', newTools)
                           }}
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                         />
@@ -718,7 +731,7 @@ Example format:
               </motion.button>
               <motion.button
                 onClick={nextStep}
-                disabled={!canProceedFromTools}
+                disabled={!canProceedFromSystemTools}
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -765,7 +778,7 @@ Example format:
               <div className="bg-blue-50 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-blue-900 mb-2">Permanent Memory</h3>
                 <div className="space-y-2">
-                  {agentData.pmem.map((item, index) => (
+                  {agentData.system_permanent_memory.map((item, index) => (
                     <div key={index} className="text-blue-800 text-sm bg-white p-2 rounded border-l-4 border-blue-500">
                       {item}
                     </div>
@@ -777,12 +790,12 @@ Example format:
               <div className="bg-green-50 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-green-900 mb-2">Selected Tools</h3>
                 <div className="flex flex-wrap gap-2">
-                  {agentData.tools.map((tool) => (
+                  {agentData.system_tools.map((tool) => (
                     <span key={tool} className="px-2 py-1 bg-green-200 text-green-800 rounded text-sm">
                       {tool}
                     </span>
                   ))}
-                  {agentData.tools.length === 0 && (
+                  {agentData.system_tools.length === 0 && (
                     <span className="text-green-700 text-sm">No tools selected</span>
                   )}
                 </div>

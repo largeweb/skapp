@@ -68,122 +68,97 @@ export async function GET(
       }
     }
     
-    // Add notes with full content
-    if (agent.note) {
-      agent.note
+    // Process notes
+    if (agent.system_notes) {
+      agent.system_notes
         .filter((note: any) => {
-          const noteTime = new Date(note.createdAt || note.timestamp)
-          return noteTime >= startDate
+          if (typeof note === 'string') return true
+          const noteDate = new Date(note.created_at)
+          return noteDate >= startDate
         })
         .forEach((note: any, index: number) => {
-          const noteTime = new Date(note.createdAt || note.timestamp)
+          const content = typeof note === 'string' ? note : note.content
+          const timestamp = typeof note === 'string' ? agent.lastActivity : note.created_at
           activities.push({
-            id: `note-${noteTime.getTime()}-${index}`,
-            timestamp: noteTime.toISOString(),
-            time: noteTime.toLocaleTimeString('en-US', { 
+            id: `note-${index}`,
+            timestamp: timestamp,
+            time: new Date(timestamp).toLocaleTimeString('en-US', { 
               hour: 'numeric', 
               minute: '2-digit',
               timeZone: 'America/New_York'
             }),
-            mode: agent.currentMode,
+            mode: agent.currentMode || 'unknown',
             type: 'note',
             action: '📝 Take Note',
-            detail: note.content?.substring(0, 100) + (note.content?.length > 100 ? '...' : ''),
-            fullResponse: note.content,
+            detail: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+            fullResponse: content,
             metadata: {
-              expiresAt: note.expiresAt,
-              tags: note.tags || [],
-              source: note.source || 'manual'
+              expiresAt: typeof note !== 'string' ? note.expires_at : undefined,
+              source: 'manual'
             }
           })
         })
     }
     
-    // Add thoughts with full content
-    if (agent.thgt) {
-      agent.thgt
+    // Process thoughts
+    if (agent.system_thoughts) {
+      agent.system_thoughts
         .filter((thought: any) => {
-          const thoughtTime = new Date(thought.createdAt || thought.timestamp)
-          return thoughtTime >= startDate
+          if (typeof thought === 'string') return true
+          const thoughtDate = new Date(thought.created_at)
+          return thoughtDate >= startDate
         })
         .forEach((thought: any, index: number) => {
-          const thoughtTime = new Date(thought.createdAt || thought.timestamp)
+          const content = typeof thought === 'string' ? thought : thought.content
+          const timestamp = typeof thought === 'string' ? agent.lastActivity : thought.created_at
           activities.push({
-            id: `thought-${thoughtTime.getTime()}-${index}`,
-            timestamp: thoughtTime.toISOString(),
-            time: thoughtTime.toLocaleTimeString('en-US', { 
+            id: `thought-${index}`,
+            timestamp: timestamp,
+            time: new Date(timestamp).toLocaleTimeString('en-US', { 
               hour: 'numeric', 
               minute: '2-digit',
               timeZone: 'America/New_York'
             }),
-            mode: agent.currentMode,
+            mode: agent.currentMode || 'unknown',
             type: 'thought',
             action: '💭 Take Thought',
-            detail: thought.content?.substring(0, 100) + (thought.content?.length > 100 ? '...' : ''),
-            fullResponse: thought.content,
+            detail: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+            fullResponse: content,
             metadata: {
-              expiresAt: thought.expiresAt,
-              context: thought.context || 'general',
-              priority: thought.priority || 'normal'
+              context: 'general',
+              priority: 'normal'
             }
           })
         })
     }
     
-    // Add tool usage with full responses
-    if (agent.tools) {
-      agent.tools
-        .filter((work: any) => {
-          const workTime = new Date(work.createdAt || work.timestamp)
-          return workTime >= startDate
+    // Process tools
+    if (agent.system_tools) {
+      agent.system_tools
+        .filter((tool: any) => {
+          if (typeof tool === 'string') return true
+          const toolDate = new Date(tool.createdAt || tool.timestamp)
+          return toolDate >= startDate
         })
-        .forEach((work: any, index: number) => {
-          const workTime = new Date(work.createdAt || work.timestamp)
-          
-          let action = '🔧 Tool Usage'
-          let detail = work.tool || 'Unknown tool'
-          let fullResponse = work.result || work.response || 'No response available'
-          
-          if (work.tool === 'web_search') {
-            action = '🔍 Web Search'
-            detail = `Searched for: "${work.query || 'unknown query'}"`
-            fullResponse = work.results || work.response || 'No search results available'
-          } else if (work.tool === 'discord_msg') {
-            action = '📱 Discord Message'
-            detail = `Posted to ${work.channel || '#general'}`
-            fullResponse = work.message || work.content || 'No message content available'
-          } else if (work.tool === 'take_note') {
-            action = '📝 Take Note'
-            detail = work.content?.substring(0, 100) + (work.content?.length > 100 ? '...' : '')
-            fullResponse = work.content || 'No note content available'
-          } else if (work.tool === 'take_thought') {
-            action = '💭 Take Thought'
-            detail = work.content?.substring(0, 100) + (work.content?.length > 100 ? '...' : '')
-            fullResponse = work.content || 'No thought content available'
-          } else if (work.tool === 'sms_operator') {
-            action = '📞 SMS Operator'
-            detail = `Sent SMS to ${work.recipient || 'unknown'}`
-            fullResponse = work.message || work.content || 'No SMS content available'
-          }
-          
+        .forEach((tool: any, index: number) => {
+          const content = typeof tool === 'string' ? tool : tool.name || tool.content
+          const timestamp = typeof tool === 'string' ? agent.lastActivity : (tool.createdAt || tool.timestamp)
           activities.push({
-            id: `work-${workTime.getTime()}-${index}`,
-            timestamp: workTime.toISOString(),
-            time: workTime.toLocaleTimeString('en-US', { 
+            id: `tool-${index}`,
+            timestamp: timestamp,
+            time: new Date(timestamp).toLocaleTimeString('en-US', { 
               hour: 'numeric', 
               minute: '2-digit',
               timeZone: 'America/New_York'
             }),
-            mode: agent.currentMode,
+            mode: agent.currentMode || 'unknown',
             type: 'tool_usage',
-            action,
-            detail,
-            fullResponse,
+            action: '🔧 Tool Usage',
+            detail: content,
+            fullResponse: content,
             metadata: {
-              tool: work.tool,
-              success: work.success !== false,
-              duration: work.duration,
-              parameters: work.parameters || {}
+              tool: content,
+              success: true
             }
           })
         })

@@ -22,16 +22,11 @@ export async function GET(
     
     const agent = JSON.parse(agentData)
     
-    // Get memory data for each layer
-    const pmemData = await env.SKAPP_AGENTS?.get(`memory:${id}:pmem`) || '[]'
-    const noteData = await env.SKAPP_AGENTS?.get(`memory:${id}:note`) || '[]'
-    const thgtData = await env.SKAPP_AGENTS?.get(`memory:${id}:thgt`) || '[]'
-    const workData = await env.SKAPP_AGENTS?.get(`memory:${id}:work`) || '[]'
-    
-    const pmem = JSON.parse(pmemData)
-    const notes = JSON.parse(noteData)
-    const thoughts = JSON.parse(thgtData)
-    const work = JSON.parse(workData)
+    // Get memory data from agent object
+    const pmem = agent.system_permanent_memory || []
+    const notes = agent.system_notes || []
+    const thoughts = agent.system_thoughts || []
+    const tools = agent.system_tools || []
     
     // Create Excel-like CSV structure
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -50,9 +45,9 @@ export async function GET(
     csvContent += `Last Activity,${agent.lastActivity}\n`
     csvContent += `Created At,${agent.createdAt}\n`
     csvContent += `Updated At,${agent.updatedAt}\n`
-    csvContent += `Goals,${agent.pmem?.goals || ''}\n`
-    csvContent += `Notes,${agent.notes || ''}\n`
-    csvContent += `Thoughts,${agent.thoughts || ''}\n`
+    csvContent += `Goals,${agent.system_permanent_memory?.join('; ') || ''}\n`
+    csvContent += `Notes,${agent.system_notes?.map((note: any) => typeof note === 'string' ? note : note.content).join('; ') || ''}\n`
+    csvContent += `Thoughts,${agent.system_thoughts?.join('; ') || ''}\n`
     csvContent += '\n'
     
     // Available Tools
@@ -77,16 +72,13 @@ export async function GET(
     const systemPrompt = `You are ${agent.name}, ${agent.description || ''}.
 
 Goals:
-${agent.pmem?.goals || ''}
+${agent.system_permanent_memory?.join('\n') || ''}
 
 Core Knowledge:
-${agent.pmem?.permanent_knowledge?.map((k: string) => `• ${k}`).join('\n') || ''}
+${agent.system_permanent_memory?.map((k: string) => `• ${k}`).join('\n') || ''}
 
-Static Attributes:
-${agent.pmem?.static_attributes?.map((attr: string) => `• ${attr}`).join('\n') || ''}
-
-Permanent Tools:
-${agent.pmem?.tools?.map((tool: string) => `• ${tool}`).join('\n') || ''}
+Available Tools:
+${agent.system_tools?.map((tool: string) => `• ${tool}`).join('\n') || ''}
 
 Available Tools: ${Object.entries(agent.availableTools || {})
   .filter(([_, enabled]) => enabled)
@@ -95,50 +87,48 @@ Available Tools: ${Object.entries(agent.availableTools || {})
     csvContent += `${systemPrompt}\n`
     csvContent += '\n\n'
     
-    // Sheet 2: PMEM (Permanent Memory)
-    csvContent += '=== PMEM (PERMANENT MEMORY) ===\n'
-    csvContent += 'Content,Source,Created At,Updated At\n'
+    // Sheet 2: System Permanent Memory
+    csvContent += '=== SYSTEM PERMANENT MEMORY ===\n'
+    csvContent += 'Content\n'
     if (Array.isArray(pmem)) {
       pmem.forEach((item: any) => {
-        const content = (item.content || item).replace(/"/g, '""')
-        csvContent += `"${content}","${item.source || 'core'}","${item.createdAt || ''}","${item.updatedAt || ''}"\n`
+        const content = (typeof item === 'string' ? item : item.content || '').replace(/"/g, '""')
+        csvContent += `"${content}"\n`
       })
     }
     csvContent += '\n\n'
     
-    // Sheet 3: NOTE (7-day persistence)
-    csvContent += '=== NOTE (7-DAY PERSISTENCE) ===\n'
-    csvContent += 'Content,Source,Created At,Expires At,Tags\n'
+    // Sheet 3: System Notes (7-day persistence)
+    csvContent += '=== SYSTEM NOTES (7-DAY PERSISTENCE) ===\n'
+    csvContent += 'Content,Created At,Expires At\n'
     if (Array.isArray(notes)) {
       notes.forEach((note: any) => {
-        const content = (note.content || note).replace(/"/g, '""')
-        const expiresAt = note.expiresAt ? new Date(note.expiresAt).toISOString() : ''
-        const tags = Array.isArray(note.tags) ? note.tags.join(';') : ''
-        csvContent += `"${content}","${note.source || 'manual'}","${note.createdAt || note.timestamp || ''}","${expiresAt}","${tags}"\n`
+        const content = (typeof note === 'string' ? note : note.content || '').replace(/"/g, '""')
+        const created_at = typeof note === 'string' ? '' : (note.created_at || '')
+        const expires_at = typeof note === 'string' ? '' : (note.expires_at || '')
+        csvContent += `"${content}","${created_at}","${expires_at}"\n`
       })
     }
     csvContent += '\n\n'
     
-    // Sheet 4: THGT (Today only)
-    csvContent += '=== THGT (TODAY ONLY) ===\n'
-    csvContent += 'Content,Context,Priority,Created At,Expires At\n'
+    // Sheet 4: System Thoughts (Today only)
+    csvContent += '=== SYSTEM THOUGHTS (TODAY ONLY) ===\n'
+    csvContent += 'Content\n'
     if (Array.isArray(thoughts)) {
       thoughts.forEach((thought: any) => {
-        const content = (thought.content || thought).replace(/"/g, '""')
-        const expiresAt = thought.expiresAt ? new Date(thought.expiresAt).toISOString() : ''
-        csvContent += `"${content}","${thought.context || 'general'}","${thought.priority || 'normal'}","${thought.createdAt || thought.timestamp || ''}","${expiresAt}"\n`
+        const content = (typeof thought === 'string' ? thought : thought.content || '').replace(/"/g, '""')
+        csvContent += `"${content}"\n`
       })
     }
     csvContent += '\n\n'
     
-    // Sheet 5: WORK (Current turn)
-    csvContent += '=== WORK (CURRENT TURN) ===\n'
-    csvContent += 'Tool,Action,Detail,Result,Success,Duration,Created At,Parameters\n'
-    if (Array.isArray(work)) {
-      work.forEach((item: any) => {
-        const result = (item.result || item.response || '').replace(/"/g, '""')
-        const parameters = JSON.stringify(item.parameters || {}).replace(/"/g, '""')
-        csvContent += `"${item.tool || 'unknown'}","${item.action || ''}","${(item.detail || '').replace(/"/g, '""')}","${result}","${item.success !== false ? 'Yes' : 'No'}","${item.duration || ''}","${item.createdAt || item.timestamp || ''}","${parameters}"\n`
+    // Sheet 5: System Tools
+    csvContent += '=== SYSTEM TOOLS ===\n'
+    csvContent += 'Tool\n'
+    if (Array.isArray(tools)) {
+      tools.forEach((tool: any) => {
+        const toolName = (typeof tool === 'string' ? tool : tool.name || tool.content || '').replace(/"/g, '""')
+        csvContent += `"${toolName}"\n`
       })
     }
     csvContent += '\n\n'
