@@ -205,20 +205,6 @@ Available Tools: ${Object.entries(agent.availableTools || {})
       })
     }
     
-    // Add work items
-    if (Array.isArray(work)) {
-      work.forEach((item: any) => {
-        allActivities.push({
-          timestamp: item.createdAt || item.timestamp || '',
-          mode: agent.currentMode,
-          type: 'tool_usage',
-          action: item.tool || 'Unknown Tool',
-          detail: item.detail || '',
-          fullResponse: item.result || item.response || ''
-        })
-      })
-    }
-    
     // Sort by timestamp and add to CSV
     allActivities
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
