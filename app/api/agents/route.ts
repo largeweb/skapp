@@ -2,6 +2,7 @@ export const runtime = 'edge'
 
 import { getRequestContext } from '@cloudflare/next-on-pages'
 import { z } from 'zod'
+import { getDefaultRequiredTools } from '@/lib/schemas'
 
 // Input validation schemas
 const CreateAgentSchema = z.object({
@@ -271,7 +272,11 @@ export async function POST(request: Request) {
       system_permanent_memory: validated.pmem || [],
       system_notes: validated.note || [],
       system_thoughts: validated.thgt || [],
-      system_tools: validated.tools || [],
+      system_tools: getDefaultRequiredTools(), // Auto-add 4 required tools
+      tool_call_results: [], // Initialize empty tool results array
+      lastCycle: new Date().toISOString(),
+      lastSlept: '1970-01-01', // Initialize to allow first sleep
+      turnsCount: 0,
       turn_prompt: validated.turn_prompt || "",
       turn_history: validated.turn_history || [],
       participants: validated.participants || [],

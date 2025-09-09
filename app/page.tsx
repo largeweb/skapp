@@ -1,12 +1,39 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 
 export default function Dashboard() {
   const [orchestrating, setOrchestrating] = useState(false);
   const [orchestrateResult, setOrchestrateResult] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      const response = await fetch('/api/dashboard-metrics');
+      if (response.ok) {
+        const data = await response.json() as any;
+        setDashboardData(data.data);
+      } else {
+        console.error('Failed to fetch dashboard data');
+        // Fallback to hardcoded data
+        setDashboardData(null);
+      }
+    } catch (error) {
+      console.error('Dashboard fetch error:', error);
+      setDashboardData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load dashboard data on mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   // Orchestrate all agents
   const handleOrchestrateAll = async () => {
@@ -42,50 +69,70 @@ export default function Dashboard() {
     }
   };
 
-  // HARDCODED DATA - Replace with API calls later
-  const systemStats = {
-    activeAgents: 4,
-    notesToday: 23,
-    lastCycle: '2m',
-    toolsExecuted: 8
+  // Use real data from dashboard metrics API or fallback to sample data
+  const systemStats = dashboardData ? {
+    activeAgents: dashboardData.activeAgents,
+    notesToday: dashboardData.notesCreated,
+    lastCycle: dashboardData.lastCycleTime,
+    toolsExecuted: dashboardData.toolCallsToday
+  } : {
+    activeAgents: 0,
+    notesToday: 0,
+    lastCycle: 'Loading...',
+    toolsExecuted: 0
   };
 
-  const agents = [
-    {
-      id: 'research_bot',
-      name: 'Agent1',
-      type: 'Research',
-      status: 'awake',
-      lastActivity: '2m ago',
-      statusColor: 'bg-blue-500',
-      statusRing: 'ring-blue-500/20'
-    },
-    {
-      id: 'content_creator',
-      name: 'Agent2', 
-      type: 'Content',
-      status: 'Sleep',
-      lastActivity: '15m ago',
-      statusColor: 'bg-blue-400',
-      statusRing: 'ring-blue-400/20'
-    },
-    {
-      id: 'discord_bot',
-      name: 'Agent3',
-      type: 'Discord',
-      status: 'Thinking',
-      lastActivity: '30s ago',
-      statusColor: 'bg-blue-600',
-      statusRing: 'ring-blue-600/20'
-    }
-  ];
+  const agents = dashboardData?.agentCards || [];
 
-  const recentActivity = [
-    { time: '2m ago', agent: 'Agent1', action: 'used web_search()', detail: 'Researching AI trends' },
-    { time: '15m ago', agent: 'Agent2', action: 'entered sleep mode', detail: 'Processing daily memories' },
-    { time: '18m ago', agent: 'Agent3', action: 'posted to Discord', detail: '#general channel' },
-    { time: '25m ago', agent: 'Agent1', action: 'took note', detail: '"Market trends show 25% growth..."' }
-  ];
+  const recentActivity = dashboardData ? 
+    agents.slice(0, 4).map((agent: any) => ({
+      time: agent.lastActivity,
+      agent: agent.name,
+      action: agent.lastToolCall || 'no recent activity',
+      detail: agent.lastNote || agent.nextAction || 'monitoring status'
+    })) : 
+    [
+      { time: 'Loading...', agent: 'System', action: 'fetching data', detail: 'Please wait' }
+    ];
+
+  // Individual agent orchestration
+  const handleOrchestrateAgent = async (agentId: string) => {
+    setOrchestrating(true);
+    setOrchestrateResult(null);
+    
+    try {
+      console.log(`🎭 Orchestrating single agent: ${agentId}`);
+      const response = await fetch('/api/orchestrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId: agentId,
+          mode: 'awake',
+          estTime: new Date().toISOString()
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json() as any;
+        setOrchestrateResult(`✅ ${agentId}: Turn completed successfully`);
+        console.log('✅ Single agent orchestration result:', data);
+        
+        // Refresh dashboard data after orchestration
+        setTimeout(() => {
+          fetchDashboardData();
+        }, 2000);
+      } else {
+        const error = await response.json() as any;
+        setOrchestrateResult(`❌ ${agentId}: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('💥 Single agent orchestration failed:', error);
+      setOrchestrateResult(`❌ ${agentId}: Network error`);
+    } finally {
+      setOrchestrating(false);
+      setTimeout(() => setOrchestrateResult(null), 5000);
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
