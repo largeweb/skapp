@@ -14,6 +14,8 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const [agent, setAgent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [orchestrating, setOrchestrating] = useState(false)
+  const [orchestrateResult, setOrchestrateResult] = useState<string | null>(null)
 
   useEffect(() => {
     const initPage = async () => {
@@ -58,6 +60,44 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
       document.body.removeChild(a)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed')
+    }
+  }
+
+  const handleOrchestrateAgent = async () => {
+    setOrchestrating(true)
+    setOrchestrateResult(null)
+    
+    try {
+      console.log(`🎭 Orchestrating agent: ${id}`)
+      const response = await fetch('/api/orchestrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId: id,
+          mode: 'awake',
+          estTime: new Date().toISOString()
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json() as any
+        setOrchestrateResult(`✅ Turn completed successfully`)
+        console.log('✅ Agent orchestration result:', data)
+        
+        // Refresh agent data after orchestration
+        setTimeout(() => {
+          fetchAgent(id)
+        }, 2000)
+      } else {
+        const error = await response.json() as any
+        setOrchestrateResult(`❌ Failed: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('💥 Agent orchestration failed:', error)
+      setOrchestrateResult('❌ Network error occurred')
+    } finally {
+      setOrchestrating(false)
+      setTimeout(() => setOrchestrateResult(null), 5000)
     }
   }
 
@@ -119,6 +159,37 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
             <div className={`px-4 py-2 rounded-full text-sm font-medium ${statusColors.bg} ${statusColors.text}`}>
               {agent.currentMode || 'awake'} mode
             </div>
+            
+            {/* Orchestrate Result */}
+            {orchestrateResult && (
+              <div className="text-sm px-3 py-1 rounded-lg bg-gray-100 text-gray-700">
+                {orchestrateResult}
+              </div>
+            )}
+            
+            {/* Run Agent Turn Button */}
+            <button
+              onClick={handleOrchestrateAgent}
+              disabled={orchestrating}
+              className={`px-6 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 ${
+                orchestrating 
+                  ? 'bg-gray-400 cursor-not-allowed text-white' 
+                  : 'bg-green-600 hover:bg-green-700 text-white shadow-sm hover:shadow-md'
+              }`}
+            >
+              {orchestrating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  <span>Running Turn...</span>
+                </>
+              ) : (
+                <>
+                  <span>🎭</span>
+                  <span>Run Agent Turn</span>
+                </>
+              )}
+            </button>
+            
             <Link href={`/agents/${agent.agentId}/settings`} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors">
               Settings
             </Link>

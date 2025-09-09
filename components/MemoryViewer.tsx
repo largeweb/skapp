@@ -217,7 +217,7 @@ export default function MemoryViewer({ agentId, className = '' }: MemoryViewerPr
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
+    return new Date(dateString).toLocaleDateString()
   }
 
   const getTimeAgo = (dateString: string) => {
