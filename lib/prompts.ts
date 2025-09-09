@@ -136,21 +136,46 @@ export const AWAKE_MODE_INSTRUCTIONS = `
 IMPORTANT INSTRUCTIONS:
 - You are an autonomous AI agent working toward a specific goal
 - Each response should show progress made toward the goal
-- Use available tools when appropriate (take_note, web_search, take_thought, etc.)
+- Use available tools in the XML format shown below
 - Always end your response with a <turn_prompt> tag containing the next specific step
 - The next step should be concrete and actionable
 - If you've achieved the goal, indicate completion in your response
-- Be strategic and methodical in your approach`;
+- Be strategic and methodical in your approach
+
+TOOL USAGE FORMAT (XML):
+To use any tool, use this exact XML syntax:
+
+<sktool><generate_system_note><message>Your note content here</message><expirationDays>7</expirationDays></generate_system_note></sktool>
+
+<sktool><generate_system_thought><message>Your thought content here</message></generate_system_thought></sktool>
+
+<sktool><generate_turn_prompt_enhancement><message>Your next turn guidance</message></generate_turn_prompt_enhancement></sktool>
+
+EXAMPLES:
+- To save important info: <sktool><generate_system_note><message>Market analysis shows 25% growth in AI sector</message><expirationDays>14</expirationDays></generate_system_note></sktool>
+- To record a thought: <sktool><generate_system_thought><message>Need to focus on competitor analysis next</message></generate_system_thought></sktool>
+- To set next turn goal: <sktool><generate_turn_prompt_enhancement><message>Research competitor pricing strategies and market positioning</message></generate_turn_prompt_enhancement></sktool>`;
 
 export const SLEEP_MODE_INSTRUCTIONS = `
 SLEEP MODE - MEMORY CONSOLIDATION:
 - Review all your turn history and extract the most important insights
-- Use take_note() for knowledge that should persist beyond today (1-14 days)
-- Use take_thought() for reflections that help with tomorrow's work
+- Use tools in XML format for knowledge that should persist beyond today
 - CRITICAL: Notes and thoughts expiring soon will be deleted - consolidate them!
 - Create a comprehensive summary of today's activities and learnings
 - End your response with <summary>today's key accomplishments and insights</summary>
-- This summary will be prepended to tomorrow's conversation history`;
+- This summary will be prepended to tomorrow's conversation history
+
+SLEEP MODE TOOL USAGE (XML):
+<sktool><generate_system_note><message>Important insight to remember</message><expirationDays>7</expirationDays></generate_system_note></sktool>
+
+<sktool><generate_system_thought><message>Reflection for tomorrow's work</message></generate_system_thought></sktool>
+
+<sktool><generate_day_summary_from_conversation><message>Comprehensive summary of today's activities</message></generate_day_summary_from_conversation></sktool>
+
+EXAMPLES:
+- Save key insight: <sktool><generate_system_note><message>Completed research on AI trends, found 3 key opportunities</message><expirationDays>10</expirationDays></generate_system_note></sktool>
+- Record reflection: <sktool><generate_system_thought><message>Tomorrow should focus on competitive analysis</message></generate_system_thought></sktool>
+- Create summary: <sktool><generate_day_summary_from_conversation><message>Today: researched AI market, identified opportunities, planned next steps</message></generate_day_summary_from_conversation></sktool>`;
 
 // ============================================================================
 // 🔧 PROMPT BUILDING FUNCTIONS
@@ -235,12 +260,26 @@ export function buildSystemPrompt(
     sections.push(`${SYSTEM_PROMPT_SECTIONS.DAILY_THOUGHTS_LABEL}:\n${agent.system_thoughts.join('\n')}`);
   }
   
-  // 5. Available Tools
+  // 5. Available Tools (XML Format)
   if (agent.system_tools && agent.system_tools.length > 0) {
-    const toolDescriptions = agent.system_tools.map((tool: any) => 
-      typeof tool === 'string' ? tool : tool.description || tool.id
-    );
-    sections.push(`${SYSTEM_PROMPT_SECTIONS.AVAILABLE_TOOLS_LABEL}:\n${toolDescriptions.join('\n')}`);
+    const toolXmlExamples = agent.system_tools.map((tool: any) => {
+      const toolId = typeof tool === 'string' ? tool : tool.id;
+      
+      // Generate XML examples for each available tool
+      switch (toolId) {
+        case 'generate_system_note':
+          return `<sktool><generate_system_note><message>Your note content</message><expirationDays>7</expirationDays></generate_system_note></sktool> - Creates persistent notes (1-14 days)`;
+        case 'generate_system_thought':
+          return `<sktool><generate_system_thought><message>Your thought content</message></generate_system_thought></sktool> - Records thoughts until sleep`;
+        case 'generate_turn_prompt_enhancement':
+          return `<sktool><generate_turn_prompt_enhancement><message>Next turn guidance</message></generate_turn_prompt_enhancement></sktool> - Sets next turn goals`;
+        case 'generate_day_summary_from_conversation':
+          return `<sktool><generate_day_summary_from_conversation><message>Summary content</message></generate_day_summary_from_conversation></sktool> - Creates daily summaries`;
+        default:
+          return `<sktool><${toolId}><message>Content</message></${toolId}></sktool> - ${toolId}`;
+      }
+    });
+    sections.push(`${SYSTEM_PROMPT_SECTIONS.AVAILABLE_TOOLS_LABEL}:\n${toolXmlExamples.join('\n')}`);
   }
   
   // 6. Tool Call Results (Recent Activity)

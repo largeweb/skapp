@@ -2,6 +2,7 @@ export const runtime = 'edge'
 
 import { getRequestContext } from '@cloudflare/next-on-pages'
 import { z } from 'zod'
+import { parseToolCalls, executeToolCalls, validateToolCall } from '@/lib/xml-parser'
 
 // Input validation schema for generate request
 const GenerateRequestSchema = z.object({
@@ -24,6 +25,7 @@ export async function POST(
   try {
     const { env } = await getRequestContext()
     const { id } = await params
+    const requestOrigin = new URL(request.url).origin
     console.log(`🔍 Generating for agent: ${id}`)
     
     // Parse and validate input
@@ -171,6 +173,39 @@ Please proceed with this task and show your progress toward the goal.`
   const response = await groqResponse.json() as any
   const generatedContent = response.choices[0]?.message?.content || 'No response generated'
   console.log(`🔍 Generated content: ${generatedContent}`)
+  
+  // Parse and execute tool calls from the generated content
+  const toolCalls = parseToolCalls(generatedContent)
+  let toolResults: string[] = []
+  
+  if (toolCalls.length > 0) {
+    console.log(`🛠️ Found ${toolCalls.length} tool calls, executing...`)
+    
+    // Get available tool IDs from agent
+    const availableToolIds = agent.system_tools?.map((tool: any) => 
+      typeof tool === 'string' ? tool : tool.id
+    ) || []
+    
+    // Validate all tool calls
+    const validToolCalls = toolCalls.filter(toolCall => {
+      const validation = validateToolCall(toolCall, availableToolIds)
+      if (!validation.valid) {
+        console.warn(`❌ Invalid tool call: ${toolCall.toolId} - ${validation.error}`)
+        return false
+      }
+      return true
+    })
+    
+         if (validToolCalls.length > 0) {
+       // Execute all valid tool calls via process-tool API
+       // TODO: Fix request scope - using localhost for now
+       const origin = 'http://localhost:3000'
+       toolResults = await executeToolCalls(validToolCalls, agentId, origin)
+      console.log(`✅ Tool execution results: ${toolResults.length} tools processed`)
+    }
+  } else {
+    console.log(`📝 No tool calls found in response`)
+  }
   
   // Extract next turn prompt from the generated content
   const nextTurnPrompt = extractNextTurnPrompt(generatedContent)

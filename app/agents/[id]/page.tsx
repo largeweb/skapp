@@ -170,11 +170,127 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
 
           {activeTab === 'activity' && (
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold">Activity Timeline</h3>
-              <div className="text-center py-12 text-gray-500">
-                <p>Activity timeline will be implemented with real agent data</p>
-                <p className="text-sm mt-2">Shows agent actions, tool usage, and mode changes</p>
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold">Activity Timeline</h3>
+                <button
+                  onClick={() => fetchAgent(id)}
+                  className="text-blue-600 hover:text-blue-700 text-sm"
+                >
+                  🔄 Refresh
+                </button>
               </div>
+              
+              {/* Turn History Section */}
+              {agent.turn_history && agent.turn_history.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-2">
+                      Turn History ({agent.turn_history.length} turns)
+                    </h4>
+                    <div className="text-sm text-gray-600 mb-3">
+                      Complete conversation history with timestamps
+                    </div>
+                    
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {agent.turn_history.map((turn: any, index: number) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              turn.role === 'user' 
+                                ? 'bg-blue-100 text-blue-700' 
+                                : 'bg-green-100 text-green-700'
+                            }`}>
+                              {turn.role === 'user' ? '👤 User' : '🤖 Agent'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {turn.timestamp ? new Date(turn.timestamp).toLocaleString() : `Turn ${index + 1}`}
+                            </span>
+                          </div>
+                          
+                          <div className="text-sm text-gray-800">
+                            {turn.content || turn.parts?.[0]?.text || 'No content'}
+                          </div>
+                          
+                          {/* Extract tool calls from turn content */}
+                          {turn.content && turn.content.includes('<sktool>') && (
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                              <div className="text-xs text-yellow-700 font-medium mb-1">🛠️ Tool Calls Detected:</div>
+                              <div className="text-xs text-yellow-600">
+                                {(turn.content.match(/<sktool><([^>]+)>/g) || [])
+                                  .map((match: string) => match.replace(/<sktool><([^>]+)>/, '$1'))
+                                  .join(', ')}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Tool Call Results Section */}
+                  {agent.tool_call_results && agent.tool_call_results.length > 0 && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        Recent Tool Executions ({agent.tool_call_results.length} results)
+                      </h4>
+                      <div className="text-sm text-gray-600 mb-3">
+                        Tool calls executed in the last 2 hours
+                      </div>
+                      
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {agent.tool_call_results.slice(-10).reverse().map((result: string, index: number) => {
+                          const parts = result.split(': ');
+                          const toolCall = parts[0] || '';
+                          const resultText = parts.slice(1).join(': ') || '';
+                          const timestampMatch = result.match(/\[([^\]]+)\]$/);
+                          const timestamp = timestampMatch ? timestampMatch[1] : '';
+                          
+                          return (
+                            <div key={index} className="border border-gray-200 rounded p-2 bg-white">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="text-xs font-medium text-blue-600">{toolCall}</div>
+                                  <div className="text-xs text-gray-700 mt-1">
+                                    {resultText.replace(/\s*\[[^\]]*\]$/, '')}
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {timestamp ? new Date(timestamp).toLocaleTimeString() : ''}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Agent Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-blue-600">{agent.turnsCount || 0}</div>
+                      <div className="text-xs text-gray-600">Total Turns</div>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-green-600">{agent.system_notes?.length || 0}</div>
+                      <div className="text-xs text-gray-600">Active Notes</div>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-purple-600">{agent.system_thoughts?.length || 0}</div>
+                      <div className="text-xs text-gray-600">Current Thoughts</div>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-orange-600">{agent.tool_call_results?.length || 0}</div>
+                      <div className="text-xs text-gray-600">Tool Results</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <p>No activity yet</p>
+                  <p className="text-sm mt-2">Turn history and tool executions will appear here</p>
+                </div>
+              )}
             </div>
           )}
 

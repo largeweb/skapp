@@ -13,22 +13,22 @@ export const REQUIRED_TOOLS: AgentTool[] = [
   {
     id: 'generate_system_note',
     required: true,
-    description: 'generate_system_note(message: string, expirationDays: int) - Creates a new note that persists in your system memory for the specified days (1-14, default 7) and then expires. Use this to remember important information, learnings, or observations that should persist across multiple turns but eventually expire.'
+    description: 'Creates a new note that persists in your system memory for the specified days (1-14, default 7) and then expires. Use this to remember important information, learnings, or observations that should persist across multiple turns but eventually expire.\n\nXML USAGE:\n<sktool><generate_system_note><message>Your note content here</message><expirationDays>7</expirationDays></generate_system_note></sktool>\n\nEXAMPLE:\n<sktool><generate_system_note><message>Market analysis shows 25% growth in AI sector</message><expirationDays>14</expirationDays></generate_system_note></sktool>'
   },
   {
     id: 'generate_system_thought',
     required: true,
-    description: 'generate_system_thought(message: string) - Records a thought that persists until your next sleep cycle. These thoughts help you maintain context and reasoning across turns within the same day. All thoughts are cleared when you enter sleep mode.'
+    description: 'Records a thought that persists until your next sleep cycle. These thoughts help you maintain context and reasoning across turns within the same day. All thoughts are cleared when you enter sleep mode.\n\nXML USAGE:\n<sktool><generate_system_thought><message>Your thought content here</message></generate_system_thought></sktool>\n\nEXAMPLE:\n<sktool><generate_system_thought><message>Need to focus on competitor analysis next</message></generate_system_thought></sktool>'
   },
   {
     id: 'generate_turn_prompt_enhancement',
     required: true,
-    description: 'generate_turn_prompt_enhancement(message: string) - Generates guidance for your next turn when in awake mode. Use this to set intentions, priorities, or specific goals for your next activation. This helps maintain continuity and purpose across turns.'
+    description: 'Generates guidance for your next turn when in awake mode. Use this to set intentions, priorities, or specific goals for your next activation. This helps maintain continuity and purpose across turns.\n\nXML USAGE:\n<sktool><generate_turn_prompt_enhancement><message>Your guidance message here</message></generate_turn_prompt_enhancement></sktool>\n\nEXAMPLE:\n<sktool><generate_turn_prompt_enhancement><message>Research competitor pricing strategies and market positioning</message></generate_turn_prompt_enhancement></sktool>'
   },
   {
     id: 'generate_day_summary_from_conversation',
     required: true,
-    description: 'generate_day_summary_from_conversation(message: string) - Used in sleep mode to create a comprehensive summary of the day\'s activities and learnings. This summary gets prepended to your conversation history to maintain context while compressing older turns.'
+    description: 'Used in sleep mode to create a comprehensive summary of the day\'s activities and learnings. This summary gets prepended to your conversation history to maintain context while compressing older turns.\n\nXML USAGE:\n<sktool><generate_day_summary_from_conversation><message>Summary of today\'s activities</message></generate_day_summary_from_conversation></sktool>\n\nEXAMPLE:\n<sktool><generate_day_summary_from_conversation><message>Today: researched AI market, identified 3 opportunities, planned competitor analysis</message></generate_day_summary_from_conversation></sktool>'
   }
 ];
 

@@ -308,9 +308,9 @@ export default function Dashboard() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {agents.map((agent, index) => (
+          {agents.map((agent: any, index: number) => (
             <motion.div 
-              key={agent.id}
+              key={agent.agentId || agent.id}
               variants={cardVariants}
               whileHover="hover"
               className="bg-white border border-gray-200 rounded-xl p-6 hover:border-gray-300 transition-all duration-300 group shadow-sm hover:shadow-lg"
@@ -326,13 +326,44 @@ export default function Dashboard() {
                 <span className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{agent.name}</span>
               </div>
               <div className="text-gray-600 mb-2">{agent.type}</div>
-              <div className="text-gray-500 text-sm mb-6">{agent.lastActivity}</div>
-              <div className="flex space-x-3">
-                {[
-                  { label: 'Chat', href: `/agents/${agent.id}`, icon: '▶️', color: 'blue', title: 'Chat with agent' },
-                  { label: 'View', href: `/agents/${agent.id}`, icon: '👁️', color: 'blue', title: 'View details' },
-                  { label: 'Monitor', href: `/agents/${agent.id}`, icon: '📊', color: 'blue', title: 'Monitor activity' }
-                ].map((button, btnIndex) => (
+              <div className="text-gray-500 text-sm mb-2">{agent.lastActivity}</div>
+              
+              {/* Agent Summary */}
+              <div className="text-xs text-gray-500 mb-4">
+                {agent.lastToolCall || agent.lastNote || agent.nextAction || 'No recent activity'}
+              </div>
+              
+              {/* Recent Tools */}
+              {agent.recentToolCalls && agent.recentToolCalls.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {agent.recentToolCalls.slice(0, 3).map((toolId: string, toolIndex: number) => (
+                    <span key={toolIndex} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                      {toolId.replace('generate_', '').replace('_', ' ')}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-col space-y-3">
+                {/* Individual Orchestrate Button */}
+                <button
+                  onClick={() => handleOrchestrateAgent(agent.agentId || agent.id)}
+                  disabled={orchestrating}
+                  className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    orchestrating 
+                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
+                      : 'bg-green-600 hover:bg-green-700 text-white shadow-sm hover:shadow-md'
+                  }`}
+                >
+                  {orchestrating ? 'Running...' : '🎭 Run Turn'}
+                </button>
+                
+                {/* Action Buttons */}
+                <div className="flex space-x-2">
+                  {[
+                    { label: 'Chat', href: `/agents/${agent.agentId || agent.id}`, icon: '▶️', color: 'blue', title: 'Chat with agent' },
+                    { label: 'View', href: `/agents/${agent.agentId || agent.id}`, icon: '👁️', color: 'blue', title: 'View details' },
+                    { label: 'Monitor', href: `/agents/${agent.agentId || agent.id}`, icon: '📊', color: 'blue', title: 'Monitor activity' }
+                  ].map((button, btnIndex) => (
                   <motion.div
                     key={button.label}
                     whileHover={{ scale: 1.05 }}
@@ -347,6 +378,7 @@ export default function Dashboard() {
                     </Link>
                   </motion.div>
                 ))}
+                </div>
               </div>
             </motion.div>
           ))}
@@ -377,7 +409,7 @@ export default function Dashboard() {
           className="bg-white border border-gray-200 rounded-xl p-6 space-y-4 shadow-sm"
           variants={cardVariants}
         >
-          {recentActivity.map((activity, index) => (
+                      {recentActivity.map((activity: any, index: number) => (
             <motion.div 
               key={index}
               initial={{ x: -20, opacity: 0 }}

@@ -31,6 +31,7 @@ export default function Navigation() {
             >
               Dashboard
             </Link>
+            {/* Hidden agents list tab - dashboard is sufficient
             <Link 
               href="/agents" 
               className={`px-4 py-2 rounded-lg transition-all duration-200 focus-visible:ring-2 focus-visible:ring-blue-500 ${
@@ -41,6 +42,7 @@ export default function Navigation() {
             >
               Agents
             </Link>
+            */}
           </div>
         </div>
         
