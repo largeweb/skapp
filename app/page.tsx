@@ -95,6 +95,32 @@ export default function Dashboard() {
       { time: 'Loading...', agent: 'System', action: 'fetching data', detail: 'Please wait' }
     ];
 
+  // Delete agent
+  const handleDeleteAgent = async (agentId: string) => {
+    if (!confirm(`Are you sure you want to delete agent "${agentId}"? This cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      console.log(`🗑️ Deleting agent: ${agentId}`);
+      const response = await fetch(`/api/agents/${agentId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        console.log(`✅ Agent ${agentId} deleted successfully`);
+        // Refresh dashboard data
+        fetchDashboardData();
+      } else {
+        const error = await response.json() as any;
+        alert(`Failed to delete agent: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('💥 Delete agent failed:', error);
+      alert('Failed to delete agent');
+    }
+  };
+
   // Individual agent orchestration
   const handleOrchestrateAgent = async (agentId: string) => {
     setOrchestrating(true);
@@ -357,27 +383,33 @@ export default function Dashboard() {
                   {orchestrating ? 'Running...' : '🎭 Run Turn'}
                 </button>
                 
-                {/* Action Buttons */}
+                                {/* Action Buttons */}
                 <div className="flex space-x-2">
-                  {[
-                    { label: 'Chat', href: `/agents/${agent.agentId || agent.id}`, icon: '▶️', color: 'blue', title: 'Chat with agent' },
-                    { label: 'View', href: `/agents/${agent.agentId || agent.id}`, icon: '👁️', color: 'blue', title: 'View details' },
-                    { label: 'Monitor', href: `/agents/${agent.agentId || agent.id}`, icon: '📊', color: 'blue', title: 'Monitor activity' }
-                  ].map((button, btnIndex) => (
+                  {/* Single Manage Button */}
                   <motion.div
-                    key={button.label}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    title={button.title}
+                    className="flex-1"
                   >
                     <Link 
-                      href={button.href}
-                      className="w-12 h-12 rounded-lg text-lg transition-all duration-200 border-2 flex items-center justify-center text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400 hover:bg-blue-50"
+                      href={`/agents/${agent.agentId || agent.id}`}
+                      className="w-full py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 border-2 flex items-center justify-center space-x-2 text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400 hover:bg-blue-50"
                     >
-                      {button.icon}
+                      <span>⚙️</span>
+                      <span>Manage</span>
                     </Link>
                   </motion.div>
-                ))}
+                  
+                  {/* Delete Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleDeleteAgent(agent.agentId || agent.id)}
+                    className="py-2 px-3 rounded-lg text-sm transition-all duration-200 border-2 flex items-center justify-center text-red-600 hover:text-red-700 border-red-300 hover:border-red-400 hover:bg-red-50"
+                    title="Delete agent"
+                  >
+                    🗑️
+                  </motion.button>
                 </div>
               </div>
             </motion.div>

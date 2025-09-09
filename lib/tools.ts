@@ -40,27 +40,17 @@ export const OPTIONAL_TOOLS: AgentTool[] = [
   {
     id: 'web_search',
     required: false,
-    description: 'web_search(query: string) - Searches the internet for current information and returns results. Use this to gather up-to-date information, research topics, or find specific data that isn\'t in your existing knowledge.'
+    description: 'Searches the internet using SERP analysis and returns Google search results from first 2 pages with links and thumbnail descriptions. Use this to gather current market data, research trends, or find specific information.\n\nXML USAGE:\n<sktool><web_search><query>Your search query</query></web_search></sktool>'
+  },
+  {
+    id: 'extract_text',
+    required: false,
+    description: 'Extracts clean text content from any web page URL by stripping away HTML markup and returning readable content. Use this to analyze articles, documentation, or web content for insights.\n\nXML USAGE:\n<sktool><extract_text><url>https://example.com</url></extract_text></sktool>'
   },
   {
     id: 'discord_message',
     required: false,
-    description: 'discord_message(channel: string, message: string) - Sends a message to a specified Discord channel. Use this to communicate with team members, share updates, or participate in community discussions.'
-  },
-  {
-    id: 'sms_operator',
-    required: false,
-    description: 'sms_operator(phone: string, message: string) - Sends an SMS message to a human operator. Use this for urgent communications or when human intervention is needed for critical decisions.'
-  },
-  {
-    id: 'email_send',
-    required: false,
-    description: 'email_send(to: string, subject: string, message: string) - Sends an email to specified recipients. Use this for formal communications, detailed reports, or structured information sharing.'
-  },
-  {
-    id: 'file_create',
-    required: false,
-    description: 'file_create(filename: string, content: string) - Creates a file with specified content. Use this to generate reports, save data, or create documentation that needs to persist beyond memory.'
+    description: 'Sends a message to a specified Discord channel using hardcoded channel configuration. Use this to communicate with team members, share updates, or participate in community discussions.\n\nXML USAGE:\n<sktool><discord_message><message>Your message content</message></discord_message></sktool>'
   }
 ];
 
@@ -136,9 +126,22 @@ export function getToolShortDescription(toolId: string): string {
   const tool = getToolById(toolId);
   if (!tool) return 'Unknown tool';
   
-  // Extract first sentence of description
-  const firstSentence = tool.description.split('.')[0];
-  return firstSentence.substring(firstSentence.indexOf(') - ') + 4) || tool.description;
+  // Extract description before XML USAGE section
+  const description = tool.description.split('\n\nXML USAGE:')[0];
+  
+  // For required tools, extract the main description
+  switch (toolId) {
+    case 'generate_system_note':
+      return 'Creates a new note that persists in your system memory for the specified days (1-14, default 7) and then expires';
+    case 'generate_system_thought':
+      return 'Records a thought that persists until your next sleep cycle';
+    case 'generate_turn_prompt_enhancement':
+      return 'Generates guidance for your next turn when in awake mode';
+    case 'generate_day_summary_from_conversation':
+      return 'Used in sleep mode to create a comprehensive summary of the day\'s activities and learnings';
+    default:
+      return description || tool.description;
+  }
 }
 
 /**

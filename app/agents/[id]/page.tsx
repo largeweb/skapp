@@ -63,6 +63,26 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  const handleDeleteAgent = async (agentId: string) => {
+    try {
+      const response = await fetch(`/api/agents/${agentId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        console.log(`✅ Agent ${agentId} deleted successfully`);
+        // Redirect to dashboard
+        window.location.href = '/';
+      } else {
+        const error = await response.json() as any;
+        alert(`Failed to delete agent: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('💥 Delete agent failed:', error);
+      alert('Failed to delete agent');
+    }
+  };
+
   const handleOrchestrateAgent = async () => {
     setOrchestrating(true)
     setOrchestrateResult(null)
@@ -190,9 +210,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </button>
             
-            <Link href={`/agents/${agent.agentId}/settings`} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors">
-              Settings
-            </Link>
+
             <button 
               onClick={handleExport}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
@@ -263,7 +281,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                     
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {agent.turn_history.map((turn: any, index: number) => (
+                      {agent.turn_history.slice().reverse().map((turn: any, index: number) => (
                         <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white">
                           <div className="flex justify-between items-start mb-2">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -367,12 +385,66 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
 
           {activeTab === 'settings' && (
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold">Agent Settings</h3>
+              <h3 className="text-xl font-semibold">Agent Configuration</h3>
               
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="text-blue-800">
-                  <strong>Note:</strong> Settings functionality is available in the dedicated settings page.
+              {/* Basic Info */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium mb-3">Basic Information</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Agent ID:</span>
+                    <span className="ml-2 font-mono">{agent.agentId}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Name:</span>
+                    <span className="ml-2">{agent.name}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-gray-600">Description:</span>
+                    <div className="ml-2 mt-1">{agent.description}</div>
+                  </div>
                 </div>
+              </div>
+
+              {/* Memory Stats */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium mb-3">Memory Statistics</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{agent.system_permanent_memory?.length || 0}</div>
+                    <div className="text-xs text-gray-600">Permanent Memory</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{agent.system_notes?.length || 0}</div>
+                    <div className="text-xs text-gray-600">Active Notes</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">{agent.system_thoughts?.length || 0}</div>
+                    <div className="text-xs text-gray-600">Current Thoughts</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">{agent.turnsCount || 0}</div>
+                    <div className="text-xs text-gray-600">Total Turns</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 className="font-medium text-red-800 mb-3">⚠️ Danger Zone</h4>
+                <p className="text-sm text-red-700 mb-4">
+                  Permanent actions that cannot be undone. Use with extreme caution.
+                </p>
+                <button
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to delete "${agent.name}"? This action cannot be undone and will permanently remove all agent data, memories, and conversation history.`)) {
+                      handleDeleteAgent(agent.agentId);
+                    }
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  🗑️ Delete Agent Permanently
+                </button>
               </div>
 
               <div className="space-y-4">

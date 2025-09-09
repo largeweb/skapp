@@ -145,6 +145,10 @@ export async function DELETE(
       await env.SKAPP_AGENTS.delete(key.name)
     }
     
+    // Invalidate dashboard-metrics cache so deleted agent disappears immediately
+    await env.SKAPP_AGENTS.delete('dashboard-metrics')
+    console.log(`🔄 Dashboard metrics cache invalidated for deleted agent: ${id}`)
+    
     return Response.json({ 
       success: true,
       message: 'Agent deleted successfully' 

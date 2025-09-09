@@ -11,6 +11,8 @@ interface AgentData {
   name: string
   description: string
   system_permanent_memory: string[]
+  system_notes: Array<{content: string, expirationDays: number}>
+  system_thoughts: string[]
   selectedOptionalTools: string[]
 }
 
@@ -27,6 +29,8 @@ export default function CreateAgentPage() {
     name: '',
     description: '',
     system_permanent_memory: [],
+    system_notes: [],
+    system_thoughts: [],
     selectedOptionalTools: []
   })
 
@@ -170,20 +174,27 @@ export default function CreateAgentPage() {
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex justify-between items-center">
-            {(['id', 'description', 'memory', 'tools', 'review'] as WizardStep[]).map((step, index) => (
-              <div key={step} className="flex items-center">
+            {([
+              { step: 'id', title: 'Identity' },
+              { step: 'description', title: 'Purpose' },
+              { step: 'memory', title: 'Memory' },
+              { step: 'tools', title: 'Tools' },
+              { step: 'review', title: 'Review' }
+            ] as Array<{step: WizardStep, title: string}>).map((item, index) => (
+              <div key={item.step} className="flex flex-col items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  currentStep === step 
+                  currentStep === item.step 
                     ? 'bg-blue-600 text-white' 
-                    : isStepValid(step) 
+                    : isStepValid(item.step) 
                       ? 'bg-green-100 text-green-600' 
                       : 'bg-gray-200 text-gray-500'
                 }`}>
                   {index + 1}
                 </div>
+                <div className="text-xs text-gray-600 mt-1">{item.title}</div>
                 {index < 4 && (
-                  <div className={`w-16 h-1 mx-2 ${
-                    isStepValid(step) ? 'bg-green-200' : 'bg-gray-200'
+                  <div className={`w-16 h-1 mx-2 mt-2 ${
+                    isStepValid(item.step) ? 'bg-green-200' : 'bg-gray-200'
                   }`} />
                 )}
               </div>
@@ -328,6 +339,113 @@ export default function CreateAgentPage() {
                   >
                     + Add Memory Item
                   </button>
+                </div>
+                
+                {/* Notes Section */}
+                <div className="mt-8">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Notes (7-day memory)</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Temporary insights that expire after 7 days. Examples: "Market research findings", "Strategic observations", "Weekly goals"
+                  </p>
+                  
+                  <div className="space-y-3">
+                    {agentData.system_notes.map((note, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={note.content}
+                          onChange={(e) => {
+                            const newNotes = [...agentData.system_notes]
+                            newNotes[index] = { ...note, content: e.target.value }
+                            setAgentData(prev => ({ ...prev, system_notes: newNotes }))
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="7-day note..."
+                        />
+                        <input
+                          type="number"
+                          min="1"
+                          max="14"
+                          value={note.expirationDays}
+                          onChange={(e) => {
+                            const newNotes = [...agentData.system_notes]
+                            newNotes[index] = { ...note, expirationDays: parseInt(e.target.value) || 7 }
+                            setAgentData(prev => ({ ...prev, system_notes: newNotes }))
+                          }}
+                          className="w-16 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-500">days</span>
+                        <button
+                          onClick={() => {
+                            const newNotes = agentData.system_notes.filter((_, i) => i !== index)
+                            setAgentData(prev => ({ ...prev, system_notes: newNotes }))
+                          }}
+                          className="text-red-600 hover:text-red-700 p-2"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    
+                    <button
+                      onClick={() => {
+                        setAgentData(prev => ({ 
+                          ...prev, 
+                          system_notes: [...prev.system_notes, { content: '', expirationDays: 7 }] 
+                        }))
+                      }}
+                      className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                    >
+                      + Add Note
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Thoughts Section */}
+                <div className="mt-8">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Thoughts (daily memory)</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Daily reflections that reset during sleep. Examples: "Today's focus", "Current priorities", "Immediate next steps"
+                  </p>
+                  
+                  <div className="space-y-3">
+                    {agentData.system_thoughts.map((thought, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={thought}
+                          onChange={(e) => {
+                            const newThoughts = [...agentData.system_thoughts]
+                            newThoughts[index] = e.target.value
+                            setAgentData(prev => ({ ...prev, system_thoughts: newThoughts }))
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="Daily thought..."
+                        />
+                        <button
+                          onClick={() => {
+                            const newThoughts = agentData.system_thoughts.filter((_, i) => i !== index)
+                            setAgentData(prev => ({ ...prev, system_thoughts: newThoughts }))
+                          }}
+                          className="text-red-600 hover:text-red-700 p-2"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    
+                    <button
+                      onClick={() => {
+                        setAgentData(prev => ({ 
+                          ...prev, 
+                          system_thoughts: [...prev.system_thoughts, ''] 
+                        }))
+                      }}
+                      className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                    >
+                      + Add Thought
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}

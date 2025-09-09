@@ -295,6 +295,10 @@ export async function POST(request: Request) {
     // Store agent ID in list for easy enumeration
     await env.SKAPP_AGENTS.put(`agents:list:${validated.agentId}`, '1')
     
+    // Invalidate dashboard-metrics cache so new agent appears immediately
+    await env.SKAPP_AGENTS.delete('dashboard-metrics')
+    console.log(`🔄 Dashboard metrics cache invalidated for new agent: ${validated.agentId}`)
+    
     return Response.json({ 
       success: true, 
       agentId: validated.agentId,
