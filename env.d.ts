@@ -4,10 +4,10 @@
 declare namespace Cloudflare {
 	interface Env {
 		SKAPP_AGENTS: KVNamespace;
-		GROQ_API_KEY: "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";
-		SERP_API_KEY: "71e0dfdfc0fdfc93ebe2c5cb0f1099e58e18cb4da85f42cc810ef191994e1092";
-		GROQ_MODEL: "openai/gpt-oss-120b";
-		ENVIRONMENT: "production";
+		GROQ_API_KEY: string;
+		SERP_API_KEY: string;
+		GROQ_MODEL: string;
+		// ENVIRONMENT: "production";
 	}
 }
 interface CloudflareEnv extends Cloudflare.Env {}

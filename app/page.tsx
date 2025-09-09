@@ -1,9 +1,47 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 
 export default function Dashboard() {
+  const [orchestrating, setOrchestrating] = useState(false);
+  const [orchestrateResult, setOrchestrateResult] = useState<string | null>(null);
+
+  // Orchestrate all agents
+  const handleOrchestrateAll = async () => {
+    setOrchestrating(true);
+    setOrchestrateResult(null);
+    
+    try {
+      console.log('🎭 Orchestrating all agents...');
+      const response = await fetch('/api/orchestrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'awake', // Force awake for manual testing
+          estTime: new Date().toISOString()
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json() as any;
+        setOrchestrateResult(`✅ Success: ${data.successful} agents processed, ${data.failed} failed`);
+        console.log('✅ Orchestration result:', data);
+      } else {
+        const error = await response.json() as any;
+        setOrchestrateResult(`❌ Failed: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('💥 Orchestration failed:', error);
+      setOrchestrateResult('❌ Network error occurred');
+    } finally {
+      setOrchestrating(false);
+      // Clear result after 5 seconds
+      setTimeout(() => setOrchestrateResult(null), 5000);
+    }
+  };
+
   // HARDCODED DATA - Replace with API calls later
   const systemStats = {
     activeAgents: 4,
@@ -161,25 +199,65 @@ export default function Dashboard() {
           <h2 className="text-2xl font-bold text-gray-900">
             Your Agents
           </h2>
-          <motion.div 
-            whileHover={{ scale: 1.05 }} 
-            whileTap={{ scale: 0.95 }}
-            className="relative"
-          >
-            <Link 
-              href="/create" 
-              className="bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-200 shadow-lg shadow-blue-600/25 hover:shadow-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              <motion.span 
-                className="text-lg"
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
+          <div className="flex items-center space-x-4">
+            {/* Orchestrate Result */}
+            {orchestrateResult && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="text-sm px-3 py-1 rounded-lg bg-gray-100 text-gray-700"
               >
-                +
-              </motion.span>
-              <span>New Agent</span>
-            </Link>
-          </motion.div>
+                {orchestrateResult}
+              </motion.div>
+            )}
+            
+            {/* Orchestrate All Button */}
+            <motion.button
+              onClick={handleOrchestrateAll}
+              disabled={orchestrating}
+              whileHover={{ scale: orchestrating ? 1 : 1.05 }}
+              whileTap={{ scale: orchestrating ? 1 : 0.95 }}
+              className={`px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-200 shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                orchestrating 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-green-600 hover:bg-green-700 focus:bg-green-700 text-white shadow-green-600/25 hover:shadow-green-500/30'
+              }`}
+            >
+              {orchestrating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  <span>Orchestrating...</span>
+                </>
+              ) : (
+                <>
+                  <span>🎭</span>
+                  <span>Orchestrate All</span>
+                </>
+              )}
+            </motion.button>
+            
+            {/* New Agent Button */}
+            <motion.div 
+              whileHover={{ scale: 1.05 }} 
+              whileTap={{ scale: 0.95 }}
+              className="relative"
+            >
+              <Link 
+                href="/create" 
+                className="bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-200 shadow-lg shadow-blue-600/25 hover:shadow-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <motion.span 
+                  className="text-lg"
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
+                >
+                  +
+                </motion.span>
+                <span>New Agent</span>
+              </Link>
+            </motion.div>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -85,7 +85,7 @@ export async function POST(
     if (error instanceof z.ZodError) {
       return Response.json({ 
         error: 'Invalid request format', 
-        details: error.errors 
+        details: error.issues 
       }, { status: 400 })
     }
     

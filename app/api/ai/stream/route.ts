@@ -109,7 +109,7 @@ export async function POST(request: Request): Promise<Response> {
       return Response.json({ 
         success: false,
         error: 'Invalid request format', 
-        details: error.errors 
+        details: error.issues 
       }, { status: 400 });
     }
     

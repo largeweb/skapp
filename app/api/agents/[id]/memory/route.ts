@@ -88,7 +88,7 @@ export async function GET(
     if (error instanceof z.ZodError) {
       return Response.json({ 
         error: 'Invalid query parameters', 
-        details: error.errors 
+        details: error.issues 
       }, { status: 400 })
     }
     
@@ -182,7 +182,7 @@ export async function POST(
     if (error instanceof z.ZodError) {
       return Response.json({ 
         error: 'Validation failed', 
-        details: error.errors 
+        details: error.issues 
       }, { status: 400 })
     }
     
@@ -267,7 +267,7 @@ export async function PUT(
     if (error instanceof z.ZodError) {
       return Response.json({ 
         error: 'Validation failed', 
-        details: error.errors 
+        details: error.issues 
       }, { status: 400 })
     }
     

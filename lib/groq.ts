@@ -4,10 +4,15 @@ import { getRequestContext } from '@cloudflare/next-on-pages';
 export function createGroqClient() {
   const { env } = getRequestContext();
   
+  console.log(`🔧 Environment check - GROQ_API_KEY present: ${!!env.GROQ_API_KEY}`);
+  console.log(`🔧 Environment check - GROQ_MODEL: ${env.GROQ_MODEL || 'undefined'}`);
+  
   if (!env.GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY environment variable is required');
   }
 
+  console.log(`🤖 Creating Groq client with model: ${env.GROQ_MODEL}`);
+  
   return new Groq({
     apiKey: env.GROQ_API_KEY,
   });

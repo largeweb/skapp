@@ -202,7 +202,7 @@ export async function GET(request: Request) {
     if (error instanceof z.ZodError) {
       return Response.json({ 
         error: 'Invalid query parameters', 
-        details: error.errors 
+        details: error.issues 
       }, { status: 400 })
     }
     
@@ -306,7 +306,7 @@ export async function POST(request: Request) {
     
     if (error instanceof z.ZodError) {
       // Create a more user-friendly error message
-      const fieldErrors = error.errors.reduce((acc, err) => {
+      const fieldErrors = error.issues.reduce((acc, err) => {
         const field = err.path.join('.')
         acc[field] = err.message
         return acc
@@ -321,7 +321,7 @@ export async function POST(request: Request) {
         error: 'Validation failed', 
         message: errorMessage,
         fieldErrors,
-        details: error.errors 
+        details: error.issues 
       }, { status: 400 })
     }
     
