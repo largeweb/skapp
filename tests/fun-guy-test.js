@@ -230,10 +230,16 @@ async function testAgentTurns() {
           console.log(`      Latest Tool: ${latestResult.substring(0, 80)}...`);
         }
         
-        // Wait between turns
+        // Wait for KV updates and between turns
         if (turn < 2) {
-          console.log(`   ⏳ Waiting 3 seconds before next turn...`);
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          const waitTime = envFlag === 'local' ? 3000 : 30000;
+          console.log(`   ⏳ Waiting ${waitTime/1000} seconds for KV updates and next turn...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else {
+          // Final turn - wait for KV updates
+          const waitTime = envFlag === 'local' ? 3000 : 30000;
+          console.log(`   ⏳ Waiting ${waitTime/1000} seconds for final KV updates...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
         }
         
       } else {

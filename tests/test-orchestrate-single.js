@@ -168,8 +168,10 @@ async function testSingleAgentOrchestration() {
     // Step 4: Get agent state after orchestration
     console.log(`\n🔍 Step 4: Getting agent state after orchestration...`);
     
-    // Wait a moment for KV updates to propagate
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Wait for KV updates to propagate (30s for preview/prod, 5s for localhost)
+    const waitTime = envFlag === 'local' ? 5000 : 30000;
+    console.log(`   ⏳ Waiting ${waitTime/1000} seconds for KV updates...`);
+    await new Promise(resolve => setTimeout(resolve, waitTime));
     
     const afterResponse = await makeRequest(`${BASE_URL}/api/agents/${testAgent.agentId}`, 'GET');
     

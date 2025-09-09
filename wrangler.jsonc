@@ -10,10 +10,10 @@
 		"nodejs_compat"
 	],
 	"vars": { 
-		// "GROQ_API_KEY": "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", // might be REVOKED
 		"GROQ_API_KEY": "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", // new groq api key PAID (I think)
 		"SERP_API_KEY": "71e0dfdfc0fdfc93ebe2c5cb0f1099e58e18cb4da85f42cc810ef191994e1092",
 		"GROQ_MODEL": "openai/gpt-oss-120b",
+		// "GROQ_API_KEY": "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", // might be REVOKED
 		// "ENVIRONMENT": "production"
 	},
 	"pages_build_output_dir": ".vercel/output/static",
