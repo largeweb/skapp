@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import ChatInterface from '../../../components/ChatInterface'
 import MemoryViewer from '../../../components/MemoryViewer'
+// Removed modal import - using inline expandable sections instead
 
 export const runtime = 'edge'
 
@@ -16,6 +17,101 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const [error, setError] = useState<string | null>(null)
   const [orchestrating, setOrchestrating] = useState(false)
   const [orchestrateResult, setOrchestrateResult] = useState<string | null>(null)
+  
+  // Expandable sections states
+  const [chatContextExpanded, setChatContextExpanded] = useState(false)
+  const [awakeContextExpanded, setAwakeContextExpanded] = useState(false)
+  const [sleepContextExpanded, setSleepContextExpanded] = useState(false)
+  
+  // Context data states
+  const [chatContextData, setChatContextData] = useState<any>(null)
+  const [awakeContextData, setAwakeContextData] = useState<any>(null)
+  const [sleepContextData, setSleepContextData] = useState<any>(null)
+  
+  // Loading states
+  const [chatContextLoading, setChatContextLoading] = useState(false)
+  const [awakeContextLoading, setAwakeContextLoading] = useState(false)
+  const [sleepContextLoading, setSleepContextLoading] = useState(false)
+
+  // Get current mode based on EST time (matching orchestrate logic)
+  const getCurrentMode = () => {
+    const now = new Date()
+    const isDST = isDaylightSavingTime(now)
+    const offset = isDST ? -4 : -5
+    const estTime = new Date(now.getTime() + offset * 60 * 60 * 1000)
+    const hour = estTime.getHours()
+    return (hour >= 3 && hour < 5) ? 'sleep' : 'awake'
+  }
+
+  const isDaylightSavingTime = (date: Date): boolean => {
+    const year = date.getUTCFullYear()
+    const march = new Date(year, 2, 1)
+    const dstStart = new Date(year, 2, 14 - march.getDay())
+    const november = new Date(year, 10, 1)
+    const dstEnd = new Date(year, 10, 7 - november.getDay())
+    return date >= dstStart && date < dstEnd
+  }
+
+  // Fetch context data functions
+  const fetchChatContext = async () => {
+    if (chatContextData) return // Already loaded
+    setChatContextLoading(true)
+    try {
+      const response = await fetch(`/api/agents/${id}/context`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'chat' })
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setChatContextData(data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch chat context:', err)
+    } finally {
+      setChatContextLoading(false)
+    }
+  }
+
+  const fetchAwakeContext = async () => {
+    if (awakeContextData) return // Already loaded
+    setAwakeContextLoading(true)
+    try {
+      const response = await fetch(`/api/agents/${id}/context`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'awake' })
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setAwakeContextData(data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch awake context:', err)
+    } finally {
+      setAwakeContextLoading(false)
+    }
+  }
+
+  const fetchSleepContext = async () => {
+    if (sleepContextData) return // Already loaded
+    setSleepContextLoading(true)
+    try {
+      const response = await fetch(`/api/agents/${id}/context`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'sleep' })
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setSleepContextData(data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch sleep context:', err)
+    } finally {
+      setSleepContextLoading(false)
+    }
+  }
 
   useEffect(() => {
     const initPage = async () => {
@@ -44,22 +140,22 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
 
   const handleExport = async () => {
     try {
-      const response = await fetch(`/api/agents/${id}/export`)
+      const response = await fetch(`/api/agents/${id}/export-csv`)
       if (!response.ok) {
-        throw new Error('Failed to export data')
+        throw new Error('Failed to export CSV data')
       }
       
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${agent?.name || 'agent'}-export-${new Date().toISOString().split('T')[0]}.zip`
+      a.download = `${agent?.name || 'agent'}-export-${new Date().toISOString().split('T')[0]}.csv`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Export failed')
+      setError(err instanceof Error ? err.message : 'CSV export failed')
     }
   }
 
@@ -132,11 +228,13 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
     return (
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600">        </div>
       </div>
-    )
-  }
+      
+      {/* No modal needed - using inline expandable sections */}
+    </div>
+  )
+}
 
   if (error || !agent) {
     return (
@@ -215,7 +313,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
               onClick={handleExport}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
             >
-              Export
+              Export Agent (CSV)
             </button>
           </div>
         </div>
@@ -242,12 +340,59 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
 
         <div className="p-6">
           {activeTab === 'chat' && (
-            <div className="h-96">
-              <ChatInterface 
-                agentId={agent.agentId} 
-                agentName={agent.name}
-                className="h-full"
-              />
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Chat with {agent.name}</h3>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Currently in <span className="font-medium">{getCurrentMode()}</span> mode
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    console.log('Chat context button clicked');
+                    setChatContextExpanded(!chatContextExpanded);
+                    if (!chatContextExpanded) {
+                      fetchChatContext();
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center space-x-2"
+                >
+                  <span>🔍</span>
+                  <span>{chatContextExpanded ? 'Hide' : 'View'} Agent Context</span>
+                </button>
+              </div>
+              <div className="h-96">
+                <ChatInterface 
+                  agentId={agent.agentId} 
+                  agentName={agent.name}
+                  className="h-full"
+                />
+              </div>
+              
+              {/* Chat Context Expandable Section */}
+              {chatContextExpanded && (
+                <div className="mt-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                  <h4 className="font-medium mb-3 text-blue-800 dark:text-blue-200">💬 Chat Mode System Prompt</h4>
+                  {chatContextLoading ? (
+                    <div className="flex items-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400 mr-2"></div>
+                      <span className="text-gray-600 dark:text-gray-400">Loading chat context...</span>
+                    </div>
+                  ) : chatContextData ? (
+                    <div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        Generated at: {chatContextData.currentTime}
+                      </div>
+                      <pre className="text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-3 rounded border border-gray-200 dark:border-gray-600 overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto">
+                        {chatContextData.systemPrompt}
+                      </pre>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-500">Failed to load context data.</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -261,12 +406,40 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold">Activity Timeline</h3>
-                <button
-                  onClick={() => fetchAgent(id)}
-                  className="text-blue-600 hover:text-blue-700 text-sm"
-                >
-                  🔄 Refresh
-                </button>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => {
+                      console.log('Awake context button clicked');
+                      setAwakeContextExpanded(!awakeContextExpanded);
+                      if (!awakeContextExpanded) {
+                        fetchAwakeContext();
+                      }
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm flex items-center space-x-1"
+                  >
+                    <span>🌅</span>
+                    <span>{awakeContextExpanded ? 'Hide' : 'Show'} Awake Context</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      console.log('Sleep context button clicked');
+                      setSleepContextExpanded(!sleepContextExpanded);
+                      if (!sleepContextExpanded) {
+                        fetchSleepContext();
+                      }
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center space-x-1"
+                  >
+                    <span>😴</span>
+                    <span>{sleepContextExpanded ? 'Hide' : 'Show'} Sleep Context</span>
+                  </button>
+                  <button
+                    onClick={() => fetchAgent(id)}
+                    className="text-blue-600 hover:text-blue-700 text-sm"
+                  >
+                    🔄 Refresh
+                  </button>
+                </div>
               </div>
               
               {/* Turn History Section */}
@@ -378,6 +551,70 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="text-center py-12 text-gray-500">
                   <p>No activity yet</p>
                   <p className="text-sm mt-2">Turn history and tool executions will appear here</p>
+                </div>
+              )}
+              
+              {/* Awake Context Expandable Section */}
+              {awakeContextExpanded && (
+                <div className="mt-6 border border-green-200 dark:border-green-700 rounded-lg p-4 bg-green-50 dark:bg-green-900/20">
+                  <h4 className="font-medium mb-3 text-green-700 dark:text-green-300">🌅 Awake Mode System Prompt</h4>
+                  {awakeContextLoading ? (
+                    <div className="flex items-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 dark:border-green-400 mr-2"></div>
+                      <span className="text-gray-600 dark:text-gray-400">Loading awake context...</span>
+                    </div>
+                  ) : awakeContextData ? (
+                    <div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        Generated at: {awakeContextData.currentTime}
+                      </div>
+                      <pre className="text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-3 rounded border border-gray-200 dark:border-gray-600 overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto">
+                        {awakeContextData.systemPrompt}
+                      </pre>
+                      {awakeContextData.turnPrompt && (
+                        <div className="mt-4">
+                          <h5 className="font-medium mb-2 text-green-700 dark:text-green-300">Turn Prompt:</h5>
+                          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-3 rounded border border-gray-200 dark:border-gray-600 text-sm">
+                            {awakeContextData.turnPrompt}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-500">Failed to load awake context data.</p>
+                  )}
+                </div>
+              )}
+              
+              {/* Sleep Context Expandable Section */}
+              {sleepContextExpanded && (
+                <div className="mt-6 border border-blue-200 dark:border-blue-700 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
+                  <h4 className="font-medium mb-3 text-blue-700 dark:text-blue-300">😴 Sleep Mode System Prompt</h4>
+                  {sleepContextLoading ? (
+                    <div className="flex items-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400 mr-2"></div>
+                      <span className="text-gray-600 dark:text-gray-400">Loading sleep context...</span>
+                    </div>
+                  ) : sleepContextData ? (
+                    <div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        Generated at: {sleepContextData.currentTime}
+                      </div>
+                      <pre className="text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-3 rounded border border-gray-200 dark:border-gray-600 overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto">
+                        {sleepContextData.systemPrompt}
+                      </pre>
+                      {sleepContextData.turnPrompt && (
+                        <div className="mt-4">
+                          <h5 className="font-medium mb-2 text-blue-700 dark:text-blue-300">Sleep Mode Prompt:</h5>
+                          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-3 rounded border border-gray-200 dark:border-gray-600 text-sm">
+                            {sleepContextData.turnPrompt}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-500">Failed to load sleep context data.</p>
+                  )}
                 </div>
               )}
             </div>
