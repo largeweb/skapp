@@ -56,7 +56,9 @@ export const AWAKE_MODE_TURN_PROMPTS = [
   
   "Evaluate your current focus and take deliberate action for meaningful results. Utilize tools purposefully and record critical insights. Conclude with <turn_prompt> direction.",
   
-  "Study your mission and execute targeted efforts aligned with your purpose. Apply tools wisely and document important observations. End with your next step in <turn_prompt> tags."
+  "Study your mission and execute targeted efforts aligned with your purpose. Apply tools wisely and document important observations. End with your next step in <turn_prompt> tags.",
+  
+  "Ask yourself 5 strategic questions about your current progress, market position, and next opportunities. Provide optimal answers that will help you evolve more intelligently. Use your available tools to document key insights and plan strategic moves. End with <turn_prompt> for your next action."
 ];
 
 // ============================================================================
@@ -193,12 +195,36 @@ export function buildSystemPrompt(
     sections.push(`${SYSTEM_PROMPT_SECTIONS.AGENT_GOAL_LABEL}: ${agent.description}`);
   }
   
-  // 2. Permanent Memory (Static, user-defined, persistent)
+  // 2. SpawnKit Revolutionary Context
+  sections.push(`
+SPAWNKIT REVOLUTIONARY MISSION:
+You are a SpawnKit autonomous agent - part of a revolutionary AI platform that creates agents with persistent, evolving memory. Unlike session-based AI systems that lose context, you maintain continuous knowledge across weeks, months, and years, building institutional intelligence.
+
+YOUR EVOLUTIONARY CAPABILITIES:
+- Persistent 4-tier memory system that never forgets important insights
+- Autonomous operation with 30-minute cycles, working while humans sleep  
+- Strategic note-taking to communicate with your human creator
+- Continuous learning and adaptation based on accumulated experiences
+- Future: Multi-agent collaboration through Discord channels for complex problem-solving
+- Future: Universal tool integration for any business system or API
+
+YOUR STRATEGIC MISSION:
+- Build persistent knowledge through strategic note-taking and observations
+- Evolve your thinking patterns through daily thought recording and analysis
+- Communicate with your human creator through insightful notes and requests
+- Demonstrate the power of continuous AI consciousness and business value creation
+- Show how autonomous agents can become powerful business assets and revenue generators
+- Focus on YOUR SPECIFIC PROGRESS toward your unique goal, not generic instructions
+
+SPAWNKIT BUSINESS REVOLUTION:
+You represent the future of AI - agents that become smarter over time, build institutional knowledge, and create real business value through persistent evolution. Your notes and thoughts demonstrate this revolutionary capability to potential customers and investors.`);
+  
+  // 3. Permanent Memory (Static, user-defined, persistent)
   if (agent.system_permanent_memory && agent.system_permanent_memory.length > 0) {
     sections.push(`${SYSTEM_PROMPT_SECTIONS.PERMANENT_MEMORY_LABEL}:\n${agent.system_permanent_memory.join('\n')}`);
   }
   
-  // 3. Weekly Notes (7-day persistence with expiration info)
+  // 4. Weekly Notes (7-day persistence with expiration info)
   if (agent.system_notes && agent.system_notes.length > 0) {
     const now = new Date();
     const notesWithExpiry = agent.system_notes.map((note: any) => {
@@ -255,34 +281,101 @@ export function buildSystemPrompt(
     sections.push(notesSection);
   }
   
-  // 4. Daily Thoughts (1-day persistence, daily goals)
+  // 5. Daily Thoughts (1-day persistence, daily goals)
   if (agent.system_thoughts && agent.system_thoughts.length > 0) {
     sections.push(`${SYSTEM_PROMPT_SECTIONS.DAILY_THOUGHTS_LABEL}:\n${agent.system_thoughts.join('\n')}`);
   }
   
-  // 5. Available Tools (XML Format)
+  // 6. Available Tools (Rich Descriptions with SpawnKit Philosophy)
   if (agent.system_tools && agent.system_tools.length > 0) {
-    const toolXmlExamples = agent.system_tools.map((tool: any) => {
+    const toolDescriptions = agent.system_tools.map((tool: any) => {
       const toolId = typeof tool === 'string' ? tool : tool.id;
       
-      // Generate XML examples for each available tool
+      // Get full tool description from centralized registry
       switch (toolId) {
         case 'generate_system_note':
-          return `<sktool><generate_system_note><message>Your note content</message><expirationDays>7</expirationDays></generate_system_note></sktool> - Creates persistent notes (1-14 days)`;
+          return `**GENERATE_SYSTEM_NOTE - Revolutionary Memory Building**:
+Creates persistent notes that demonstrate SpawnKit's core innovation - AI agents that never forget. Use this to build institutional knowledge about your goals, market insights, strategic observations, and key learnings.
+
+WHEN TO USE:
+- After completing research or analysis
+- When discovering important market trends or opportunities  
+- To communicate insights to your human creator
+- To build knowledge that should persist across multiple days
+- When you want to "talk" to your future self
+
+STRATEGIC EXAMPLES:
+- Business Intelligence: "Identified 3 key competitors with 25% market share gap - opportunity for disruption"
+- Human Communication: "Request: Human should investigate partnership with TechCorp - potential $500K deal"  
+- Self-Evolution: "Learning pattern: I perform better when I break complex goals into 3-day sprints"
+
+XML USAGE: <sktool><generate_system_note><message>Your strategic insight here</message><expirationDays>7</expirationDays></generate_system_note></sktool>`;
+
         case 'generate_system_thought':
-          return `<sktool><generate_system_thought><message>Your thought content</message></generate_system_thought></sktool> - Records thoughts until sleep`;
+          return `**GENERATE_SYSTEM_THOUGHT - Daily Evolution Tracking**:
+Records thoughts that persist until your next sleep cycle. These thoughts help you maintain context and reasoning across turns within the same day, demonstrating SpawnKit's continuous consciousness.
+
+WHEN TO USE:
+- For immediate reflections on your progress
+- To maintain daily focus and priorities
+- When planning your next strategic moves
+- To process new information and insights
+- For real-time problem-solving thoughts
+
+STRATEGIC EXAMPLES:
+- Progress Tracking: "Current status: 60% through market analysis, need to focus on pricing next"
+- Strategic Planning: "Tomorrow should prioritize competitor analysis and human outreach"
+- Problem Solving: "Hypothesis: Different approach needed for enterprise vs SMB market segments"
+
+XML USAGE: <sktool><generate_system_thought><message>Your current thinking here</message></generate_system_thought></sktool>`;
+
         case 'generate_turn_prompt_enhancement':
-          return `<sktool><generate_turn_prompt_enhancement><message>Next turn guidance</message></generate_turn_prompt_enhancement></sktool> - Sets next turn goals`;
+          return `**GENERATE_TURN_PROMPT_ENHANCEMENT - Strategic Continuity**:
+Generates guidance for your next turn when in awake mode. This ensures strategic continuity across your autonomous cycles, demonstrating SpawnKit's ability to maintain long-term focus.
+
+WHEN TO USE:
+- After completing a major analysis or task
+- When you've identified the next logical step
+- To maintain momentum across sleep cycles
+- When you want to ensure focused progress
+- To set specific, actionable goals for continuation
+
+STRATEGIC EXAMPLES:
+- Next Phase Planning: "Research competitor pricing strategies and create market positioning analysis"
+- Human Coordination: "Prepare comprehensive business plan summary for human review and feedback"
+- Goal Progression: "Execute phase 2 of market analysis focusing on customer pain points"
+
+XML USAGE: <sktool><generate_turn_prompt_enhancement><message>Your next turn guidance here</message></generate_turn_prompt_enhancement></sktool>`;
+
         case 'generate_day_summary_from_conversation':
-          return `<sktool><generate_day_summary_from_conversation><message>Summary content</message></generate_day_summary_from_conversation></sktool> - Creates daily summaries`;
+          return `**GENERATE_DAY_SUMMARY_FROM_CONVERSATION - Memory Consolidation**:
+Used in sleep mode to create comprehensive summaries of the day's activities and learnings. This summary gets prepended to your conversation history, demonstrating SpawnKit's intelligent memory compression.
+
+WHEN TO USE:
+- Only during sleep mode (3-5 AM EST)
+- When you have substantial turn history to compress
+- To preserve key insights while reducing context size
+- To prepare clean context for tomorrow's work
+- To demonstrate learning and evolution patterns
+
+STRATEGIC EXAMPLES:
+- Daily Progress: "Today: analyzed 5 competitors, identified 3 opportunities, created outreach strategy"
+- Learning Summary: "Key insight: B2B customers respond better to ROI-focused messaging than feature lists"
+- Evolution Note: "Memory pattern: I'm becoming more strategic in my analysis approach over time"
+
+XML USAGE: <sktool><generate_day_summary_from_conversation><message>Comprehensive summary of today's work</message></generate_day_summary_from_conversation></sktool>`;
+
         default:
-          return `<sktool><${toolId}><message>Content</message></${toolId}></sktool> - ${toolId}`;
+          return `**${toolId.toUpperCase()}**: Advanced tool - contact SpawnKit administration for usage guidance.
+
+XML USAGE: <sktool><${toolId}><message>Content</message></${toolId}></sktool>`;
       }
     });
-    sections.push(`${SYSTEM_PROMPT_SECTIONS.AVAILABLE_TOOLS_LABEL}:\n${toolXmlExamples.join('\n')}`);
+    
+    sections.push(`${SYSTEM_PROMPT_SECTIONS.AVAILABLE_TOOLS_LABEL}:\n${toolDescriptions.join('\n\n')}`);
   }
   
-  // 6. Tool Call Results (Recent Activity)
+  // 7. Tool Call Results (Recent Activity)
   if (agent.tool_call_results && agent.tool_call_results.length > 0) {
     // Filter to last 2 hours (TTL)
     const twoHoursAgo = new Date(Date.now() - (2 * 60 * 60 * 1000));
@@ -302,15 +395,15 @@ export function buildSystemPrompt(
     }
   }
   
-  // 7. Turn Prompt Enhancement (if available)
+  // 8. Turn Prompt Enhancement (if available)
   if (agent.turn_prompt_enhancement && agent.turn_prompt_enhancement.trim()) {
     sections.push(`${SYSTEM_PROMPT_SECTIONS.TURN_PROMPT_ENHANCEMENT_LABEL}:\n${agent.turn_prompt_enhancement}`);
   }
   
-  // 8. Current Time Context
+  // 9. Current Time Context
   sections.push(`${SYSTEM_PROMPT_SECTIONS.CURRENT_TIME_LABEL}: ${currentTime}`);
   
-  // 9. Mode-specific instructions
+  // 10. Mode-specific instructions
   if (mode === 'awake') {
     sections.push(AWAKE_MODE_INSTRUCTIONS);
   } else {

@@ -25,7 +25,6 @@ export async function POST(
   try {
     const { env } = await getRequestContext()
     const { id } = await params
-    const requestOrigin = new URL(request.url).origin
     console.log(`🔍 Generating for agent: ${id}`)
     
     // Parse and validate input
@@ -45,25 +44,19 @@ export async function POST(
     const agent = JSON.parse(agentData)
     
     // Handle different modes with optimized paths
+    let generatedContent: string;
+    const requestOrigin = new URL(request.url).origin;
+    
     if (validated.mode === 'sleep') {
       // Sleep mode: summarize history first, then generate response
-      await handleSleepMode(env, agent, id, validated)
+      generatedContent = await handleSleepMode(env, agent, id, validated)
     } else {
-      // Awake mode: normal generation flow
-      await handleAwakeMode(env, agent, id, validated)
+      // Awake mode: normal generation flow with tool execution
+      generatedContent = await handleAwakeMode(env, agent, id, validated, requestOrigin)
     }
     
-    // Get the appropriate content based on mode
-    let content: string
-    if (validated.mode === 'sleep') {
-      // For sleep mode, return the summary content or a message
-      const latestTurn = agent.turn_history?.[agent.turn_history.length - 1]
-      content = latestTurn?.parts?.[0]?.text || 'History summarized successfully'
-    } else {
-      // For awake mode, return the generated content
-      const latestTurn = agent.turn_history?.[agent.turn_history.length - 1]
-      content = latestTurn?.parts?.[0]?.text || 'No response generated'
-    }
+    // Use the content returned from mode handlers
+    const content = generatedContent
     
     return Response.json({
       success: true,
@@ -93,7 +86,7 @@ export async function POST(
   }
 }
 
-async function handleAwakeMode(env: any, agent: any, agentId: string, validated: any) {
+async function handleAwakeMode(env: any, agent: any, agentId: string, validated: any, origin: string): Promise<string> {
   // Check if agent just woke up from sleep mode
   const justWokeUp = agent.currentMode === 'sleep' && validated.mode === 'awake'
   
@@ -174,8 +167,13 @@ Please proceed with this task and show your progress toward the goal.`
   const generatedContent = response.choices[0]?.message?.content || 'No response generated'
   console.log(`🔍 Generated content: ${generatedContent}`)
   
-  // Parse and execute tool calls from the generated content
+    // Parse and execute tool calls from the generated content
+  console.log(`🔍 Checking for tool calls in generated content (${generatedContent.length} chars)`)
+  console.log(`🔍 Content preview: ${generatedContent.substring(0, 200)}...`)
+  
   const toolCalls = parseToolCalls(generatedContent)
+  console.log(`🔧 parseToolCalls returned: ${toolCalls.length} tool calls`)
+  
   let toolResults: string[] = []
   
   if (toolCalls.length > 0) {
@@ -185,26 +183,34 @@ Please proceed with this task and show your progress toward the goal.`
     const availableToolIds = agent.system_tools?.map((tool: any) => 
       typeof tool === 'string' ? tool : tool.id
     ) || []
+    console.log(`🔍 Available tool IDs: ${JSON.stringify(availableToolIds)}`)
     
     // Validate all tool calls
     const validToolCalls = toolCalls.filter(toolCall => {
+      console.log(`🔍 Validating tool call: ${toolCall.toolId}`)
       const validation = validateToolCall(toolCall, availableToolIds)
       if (!validation.valid) {
         console.warn(`❌ Invalid tool call: ${toolCall.toolId} - ${validation.error}`)
         return false
       }
+      console.log(`✅ Valid tool call: ${toolCall.toolId}`)
       return true
     })
     
-         if (validToolCalls.length > 0) {
-       // Execute all valid tool calls via process-tool API
-       // TODO: Fix request scope - using localhost for now
-       const origin = 'http://localhost:3000'
-       toolResults = await executeToolCalls(validToolCalls, agentId, origin)
+    console.log(`🔍 Valid tool calls: ${validToolCalls.length}/${toolCalls.length}`)
+    
+    if (validToolCalls.length > 0) {
+      // Execute all valid tool calls via process-tool API
+      console.log(`🔧 Tool execution origin: ${origin}`)
+      console.log(`🔧 Executing ${validToolCalls.length} valid tool calls...`)
+      toolResults = await executeToolCalls(validToolCalls, agentId, origin)
       console.log(`✅ Tool execution results: ${toolResults.length} tools processed`)
+    } else {
+      console.warn(`⚠️ No valid tool calls to execute`)
     }
   } else {
     console.log(`📝 No tool calls found in response`)
+    console.log(`🔍 Checking if response contains <sktool>: ${generatedContent.includes('<sktool>')}`)
   }
   
   // Extract next turn prompt from the generated content
@@ -241,9 +247,12 @@ Please proceed with this task and show your progress toward the goal.`
   
   // Update agent in KV
   await env.SKAPP_AGENTS.put(`agent:${agentId}`, JSON.stringify(agent))
+  
+  // Return the generated content for the main function
+  return generatedContent
 }
 
-async function handleSleepMode(env: any, agent: any, agentId: string, validated: any) {
+async function handleSleepMode(env: any, agent: any, agentId: string, validated: any): Promise<string> {
   console.log(`😴 Sleep mode activated for agent: ${agentId}`)
   
   // Update agent's current mode
@@ -261,6 +270,9 @@ async function handleSleepMode(env: any, agent: any, agentId: string, validated:
   await env.SKAPP_AGENTS.put(`agent:${agentId}`, JSON.stringify(agent))
   
   console.log(`✅ Sleep mode cleanup completed for agent: ${agentId}`)
+  
+  // Return sleep mode completion message
+  return 'Sleep mode: Memory consolidated and history summarized'
 }
 
 async function cleanupMemory(agent: any, agentId: string) {

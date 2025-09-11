@@ -3,6 +3,7 @@ export const runtime = 'edge';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { z } from 'zod';
 import { buildSystemPrompt, buildTurnPrompt, getRandomTurnPrompt } from '@/lib/prompts';
+import { convertToEST, getCurrentAgentMode, formatESTTime, createAPIResponse, createAPIError } from '@/lib/utils';
 
 const ContextRequestSchema = z.object({
   mode: z.enum(['awake', 'sleep', 'chat']),
@@ -37,19 +38,12 @@ export async function POST(
     
     const agent = JSON.parse(agentData);
     
-    // Get current time in EST (matching orchestrate logic)
+    // Get current time in EST (using centralized utilities)
     const now = new Date();
-    const estTime = convertToEST(now);
-    const hour = estTime.getHours();
-    const currentMode = (hour >= 3 && hour < 5) ? 'sleep' : 'awake';
-    const timeStr = estTime.toLocaleTimeString('en-US', { 
-      timeZone: 'America/New_York', 
-      hour12: true, 
-      hour: 'numeric', 
-      minute: '2-digit' 
-    });
+    const currentMode = getCurrentAgentMode(now);
+    const timeStr = formatESTTime(now);
     
-    console.log(`🕐 Context API: EST ${estTime.toISOString()}, Hour: ${hour}, Mode: ${currentMode}`);
+    console.log(`🕐 Context API: Mode: ${currentMode}, Time: ${timeStr}`);
     
     // Build system prompt based on mode
     let systemPrompt: string;
@@ -113,20 +107,7 @@ export async function POST(
   }
 }
 
-function convertToEST(utcDate: Date): Date {
-  const isDST = isDaylightSavingTime(utcDate);
-  const offset = isDST ? -4 : -5;
-  return new Date(utcDate.getTime() + offset * 60 * 60 * 1000);
-}
-
-function isDaylightSavingTime(date: Date): boolean {
-  const year = date.getUTCFullYear();
-  const march = new Date(year, 2, 1);
-  const dstStart = new Date(year, 2, 14 - march.getDay());
-  const november = new Date(year, 10, 1);
-  const dstEnd = new Date(year, 10, 7 - november.getDay());
-  return date >= dstStart && date < dstEnd;
-}
+// Timezone functions moved to @/lib/utils
 
 function buildChatSystemPrompt(agent: any, currentTime: string): string {
   const sections: string[] = [];

@@ -2,6 +2,13 @@ export const runtime = 'edge';
 
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { buildSystemPrompt, buildTurnPrompt } from '@/lib/prompts';
+import { 
+  getCurrentAgentMode, 
+  formatESTTime, 
+  escapeCSV, 
+  generateFilename,
+  createAPIError 
+} from '@/lib/utils';
 
 export async function GET(
   request: Request,
@@ -24,19 +31,10 @@ export async function GET(
     
     const agent = JSON.parse(agentData);
     
-    // Determine current mode using orchestrate logic
+    // Determine current mode using centralized utilities
     const now = new Date();
-    const estTime = convertToEST(now);
-    const hour = estTime.getHours();
-    const currentMode = (hour >= 3 && hour < 5) ? 'sleep' : 'awake';
-    
-    // Build current system prompt
-    const timeStr = estTime.toLocaleTimeString('en-US', { 
-      timeZone: 'America/New_York', 
-      hour12: true, 
-      hour: 'numeric', 
-      minute: '2-digit' 
-    });
+    const currentMode = getCurrentAgentMode(now);
+    const timeStr = formatESTTime(now);
     const systemPrompt = buildSystemPrompt(agent, currentMode, timeStr);
     const turnPrompt = buildTurnPrompt(agent, currentMode);
     
@@ -132,7 +130,7 @@ export async function GET(
     }
     
     const csvContent = csvRows.join('\n');
-    const filename = `${agent.name.replace(/[^a-zA-Z0-9]/g, '_')}-export-${new Date().toISOString().split('T')[0]}.csv`;
+    const filename = generateFilename(agent.name, 'csv');
     
     return new Response(csvContent, {
       headers: {
@@ -151,28 +149,4 @@ export async function GET(
   }
 }
 
-function convertToEST(utcDate: Date): Date {
-  const isDST = isDaylightSavingTime(utcDate);
-  const offset = isDST ? -4 : -5;
-  return new Date(utcDate.getTime() + offset * 60 * 60 * 1000);
-}
-
-function isDaylightSavingTime(date: Date): boolean {
-  const year = date.getUTCFullYear();
-  const march = new Date(year, 2, 1);
-  const dstStart = new Date(year, 2, 14 - march.getDay());
-  const november = new Date(year, 10, 1);
-  const dstEnd = new Date(year, 10, 7 - november.getDay());
-  return date >= dstStart && date < dstEnd;
-}
-
-function escapeCSV(value: string): string {
-  if (!value) return '';
-  
-  // If the value contains commas, quotes, or newlines, wrap it in quotes and escape internal quotes
-  if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r')) {
-    return '"' + value.replace(/"/g, '""') + '"';
-  }
-  
-  return value;
-} 
+// All utility functions moved to @/lib/utils 

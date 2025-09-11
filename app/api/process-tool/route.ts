@@ -48,12 +48,17 @@ export async function POST(request: Request): Promise<Response> {
         }, { status: 400 });
       }
       
-      // Create formatted tool call result
+      // Create formatted tool call result with better parameter display
       const paramString = Object.entries(validated.params)
-        .map(([key, value]) => `${key}: ${String(value)}`)
+        .map(([key, value]) => {
+          const displayValue = String(value).length > 60 
+            ? String(value).substring(0, 60) + '...'
+            : String(value);
+          return `${key}:"${displayValue}"`;
+        })
         .join(', ');
       const timestamp = new Date().toISOString();
-      const toolCallResult = `${validated.toolId}(${paramString}): ${result.result} [${timestamp}]`;
+      const toolCallResult = `${validated.toolId}(${paramString}) → ${result.result} [${timestamp}]`;
       
       // Update agent KV with tool results
       await updateAgentWithToolResult(env, agentKey, agent, toolCallResult);

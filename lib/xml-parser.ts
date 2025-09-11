@@ -66,9 +66,10 @@ function parseIndividualTool(toolXml: string, rawXml: string): ParsedToolCall | 
     // Extract any other common parameters
     const otherParams = ['query', 'channel', 'phone', 'to', 'subject', 'filename', 'content'];
     for (const paramName of otherParams) {
-      const paramMatch = toolXml.match(new RegExp(`<${paramName}>([\\s\\S]*?)<\\/${paramName}>`, 'g'));
-      if (paramMatch) {
-        params[paramName] = paramMatch[1].trim();
+      const paramRegex = new RegExp(`<${paramName}>([\\s\\S]*?)<\\/${paramName}>`, 'i'); // Fixed: removed 'g' flag
+      const paramMatch = toolXml.match(paramRegex);
+      if (paramMatch && paramMatch[1]) {
+        params[paramName] = convertParameterValue(paramName, paramMatch[1].trim());
         console.log(`🔧 Extracted ${paramName}: ${params[paramName]}`);
       }
     }

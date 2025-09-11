@@ -4,6 +4,7 @@ import { getRequestContext } from '@cloudflare/next-on-pages';
 import { z } from 'zod';
 import { OrchestrationRequestSchema } from '@/lib/schemas';
 import { buildSystemPrompt, buildTurnPrompt } from '@/lib/prompts';
+import { convertToEST, getCurrentAgentMode, getESTDateString } from '@/lib/utils';
 
 type Mode = 'awake' | 'sleep';
 
@@ -23,12 +24,11 @@ export async function POST(request: Request) {
     // Time handling (EST regardless of PoP)
     const now = body.data.estTime ? new Date(body.data.estTime) : new Date();
     const estTime = convertToEST(now);
-    const today = estTime.toISOString().slice(0, 10);
+    const today = getESTDateString(now);
     console.log(`🌍 Orchestration time: UTC ${now.toISOString()} → EST ${estTime.toISOString()}`);
 
-    // Determine mode for all agents (hour >= 3 && hour < 5 = sleep, otherwise awake)
-    const hour = estTime.getHours();
-    const mode: Mode = body.data.mode || ((hour >= 3 && hour < 5) ? 'sleep' : 'awake');
+    // Determine mode for all agents using centralized logic
+    const mode: Mode = body.data.mode || getCurrentAgentMode(now);
     console.log(`🎭 Determined mode: ${mode} for all agents`);
 
     // Determine agents to process
@@ -137,20 +137,7 @@ export async function POST(request: Request) {
   }
 }
 
-function convertToEST(utcDate: Date): Date {
-  const isDST = isDaylightSavingTime(utcDate);
-  const offset = isDST ? -4 : -5;
-  return new Date(utcDate.getTime() + offset * 60 * 60 * 1000);
-}
-
-function isDaylightSavingTime(date: Date): boolean {
-  const year = date.getUTCFullYear();
-  const march = new Date(year, 2, 1);
-  const dstStart = new Date(year, 2, 14 - march.getDay());
-  const november = new Date(year, 10, 1);
-  const dstEnd = new Date(year, 10, 7 - november.getDay());
-  return date >= dstStart && date < dstEnd;
-}
+// Timezone functions moved to @/lib/utils
 
 function preparePayload(agentId: string, agent: any, mode: Mode, estTime: Date) {
   const timeStr = estTime.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: true, hour: 'numeric', minute: '2-digit' });

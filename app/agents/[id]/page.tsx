@@ -5,7 +5,17 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import ChatInterface from '../../../components/ChatInterface'
 import MemoryViewer from '../../../components/MemoryViewer'
-// Removed modal import - using inline expandable sections instead
+import { 
+  getCurrentAgentMode, 
+  fetchAgentContext, 
+  fetchAgent, 
+  orchestrateAgent, 
+  downloadFile, 
+  generateFilename,
+  getAgentStatusColors,
+  getLoadingSpinnerClasses,
+  getTextClasses
+} from '@/lib/utils'
 
 export const runtime = 'edge'
 
@@ -33,109 +43,73 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const [awakeContextLoading, setAwakeContextLoading] = useState(false)
   const [sleepContextLoading, setSleepContextLoading] = useState(false)
 
-  // Get current mode based on EST time (matching orchestrate logic)
-  const getCurrentMode = () => {
-    const now = new Date()
-    const isDST = isDaylightSavingTime(now)
-    const offset = isDST ? -4 : -5
-    const estTime = new Date(now.getTime() + offset * 60 * 60 * 1000)
-    const hour = estTime.getHours()
-    return (hour >= 3 && hour < 5) ? 'sleep' : 'awake'
-  }
+  // Get current mode using centralized utility
+  const getCurrentMode = () => getCurrentAgentMode()
 
-  const isDaylightSavingTime = (date: Date): boolean => {
-    const year = date.getUTCFullYear()
-    const march = new Date(year, 2, 1)
-    const dstStart = new Date(year, 2, 14 - march.getDay())
-    const november = new Date(year, 10, 1)
-    const dstEnd = new Date(year, 10, 7 - november.getDay())
-    return date >= dstStart && date < dstEnd
-  }
-
-  // Fetch context data functions
-  const fetchChatContext = async () => {
+  // Fetch context data functions using centralized utilities
+  const fetchChatContextData = async () => {
     if (chatContextData) return // Already loaded
     setChatContextLoading(true)
-    try {
-      const response = await fetch(`/api/agents/${id}/context`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'chat' })
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setChatContextData(data)
-      }
-    } catch (err) {
-      console.error('Failed to fetch chat context:', err)
-    } finally {
-      setChatContextLoading(false)
+    
+    const result = await fetchAgentContext(id, 'chat')
+    if (result.success) {
+      setChatContextData(result.data)
+    } else {
+      console.error('Failed to fetch chat context:', result.error)
     }
+    
+    setChatContextLoading(false)
   }
 
-  const fetchAwakeContext = async () => {
+  const fetchAwakeContextData = async () => {
     if (awakeContextData) return // Already loaded
     setAwakeContextLoading(true)
-    try {
-      const response = await fetch(`/api/agents/${id}/context`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'awake' })
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setAwakeContextData(data)
-      }
-    } catch (err) {
-      console.error('Failed to fetch awake context:', err)
-    } finally {
-      setAwakeContextLoading(false)
+    
+    const result = await fetchAgentContext(id, 'awake')
+    if (result.success) {
+      setAwakeContextData(result.data)
+    } else {
+      console.error('Failed to fetch awake context:', result.error)
     }
+    
+    setAwakeContextLoading(false)
   }
 
-  const fetchSleepContext = async () => {
+  const fetchSleepContextData = async () => {
     if (sleepContextData) return // Already loaded
     setSleepContextLoading(true)
-    try {
-      const response = await fetch(`/api/agents/${id}/context`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'sleep' })
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setSleepContextData(data)
-      }
-    } catch (err) {
-      console.error('Failed to fetch sleep context:', err)
-    } finally {
-      setSleepContextLoading(false)
+    
+    const result = await fetchAgentContext(id, 'sleep')
+    if (result.success) {
+      setSleepContextData(result.data)
+    } else {
+      console.error('Failed to fetch sleep context:', result.error)
     }
+    
+    setSleepContextLoading(false)
   }
 
   useEffect(() => {
     const initPage = async () => {
       const resolvedParams = await params
       setId(resolvedParams.id)
-      await fetchAgent(resolvedParams.id)
+      await fetchAgentData(resolvedParams.id)
     }
     initPage()
   }, [params])
 
-  const fetchAgent = async (agentId: string) => {
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/agents/${agentId}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch agent')
-      }
-      const data = await response.json()
-      setAgent(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
-    } finally {
-      setLoading(false)
+  const fetchAgentData = async (agentId: string) => {
+    setLoading(true)
+    const result = await fetchAgent(agentId)
+    
+    if (result.success) {
+      setAgent(result.data)
+      setError(null)
+    } else {
+      setError(result.error || 'Failed to fetch agent')
     }
+    
+    setLoading(false)
   }
 
   const handleExport = async () => {
@@ -242,7 +216,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
         <div className="text-center p-6">
           <div className="text-red-600 mb-2">Error loading agent</div>
           <button 
-            onClick={() => fetchAgent(id)}
+            onClick={() => fetchAgentData(id)}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Retry
@@ -353,7 +327,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                     console.log('Chat context button clicked');
                     setChatContextExpanded(!chatContextExpanded);
                     if (!chatContextExpanded) {
-                      fetchChatContext();
+                      fetchChatContextData();
                     }
                   }}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center space-x-2"
@@ -412,7 +386,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                       console.log('Awake context button clicked');
                       setAwakeContextExpanded(!awakeContextExpanded);
                       if (!awakeContextExpanded) {
-                        fetchAwakeContext();
+                        fetchAwakeContextData();
                       }
                     }}
                     className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm flex items-center space-x-1"
@@ -425,7 +399,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                       console.log('Sleep context button clicked');
                       setSleepContextExpanded(!sleepContextExpanded);
                       if (!sleepContextExpanded) {
-                        fetchSleepContext();
+                        fetchSleepContextData();
                       }
                     }}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center space-x-1"
@@ -434,7 +408,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                     <span>{sleepContextExpanded ? 'Hide' : 'Show'} Sleep Context</span>
                   </button>
                   <button
-                    onClick={() => fetchAgent(id)}
+                    onClick={() => fetchAgentData(id)}
                     className="text-blue-600 hover:text-blue-700 text-sm"
                   >
                     🔄 Refresh
@@ -501,24 +475,38 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                       
                       <div className="space-y-2 max-h-64 overflow-y-auto">
                         {agent.tool_call_results.slice(-10).reverse().map((result: string, index: number) => {
-                          const parts = result.split(': ');
-                          const toolCall = parts[0] || '';
-                          const resultText = parts.slice(1).join(': ') || '';
-                          const timestampMatch = result.match(/\[([^\]]+)\]$/);
-                          const timestamp = timestampMatch ? timestampMatch[1] : '';
+                          // Enhanced parsing for new format: toolId(params) → result [timestamp]
+                          const arrowSplit = result.split(' → ');
+                          const toolCallPart = arrowSplit[0] || '';
+                          const resultPart = arrowSplit[1] || '';
+                          
+                          // Extract tool name and parameters
+                          const toolMatch = toolCallPart.match(/^([^(]+)\((.+)\)$/);
+                          const toolName = toolMatch ? toolMatch[1] : toolCallPart;
+                          const params = toolMatch ? toolMatch[2] : '';
+                          
+                          // Extract result and timestamp
+                          const timestampMatch = resultPart.match(/^(.+?)\s*\[([^\]]+)\]$/);
+                          const resultText = timestampMatch ? timestampMatch[1] : resultPart;
+                          const timestamp = timestampMatch ? timestampMatch[2] : '';
                           
                           return (
-                            <div key={index} className="border border-gray-200 rounded p-2 bg-white">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="text-xs font-medium text-blue-600">{toolCall}</div>
-                                  <div className="text-xs text-gray-700 mt-1">
-                                    {resultText.replace(/\s*\[[^\]]*\]$/, '')}
-                                  </div>
+                            <div key={index} className="border border-gray-200 dark:border-gray-600 rounded p-3 bg-white dark:bg-gray-800">
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                  🛠️ {toolName}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-gray-500 dark:text-gray-500">
                                   {timestamp ? new Date(timestamp).toLocaleTimeString() : ''}
                                 </div>
+                              </div>
+                              {params && (
+                                <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                                  Parameters: {params}
+                                </div>
+                              )}
+                              <div className="text-sm text-gray-800 dark:text-gray-200">
+                                {resultText}
                               </div>
                             </div>
                           );
