@@ -205,6 +205,25 @@ Please proceed with this task and show your progress toward the goal.`
       console.log(`🔧 Executing ${validToolCalls.length} valid tool calls...`)
       toolResults = await executeToolCalls(validToolCalls, agentId, origin)
       console.log(`✅ Tool execution results: ${toolResults.length} tools processed`)
+      
+      // CRITICAL FIX: Reload agent data after tool execution to get tool results
+      try {
+        console.log(`🔄 Reloading agent data after tool execution...`)
+        const updatedAgentData = await env.SKAPP_AGENTS.get(`agent:${agentId}`)
+        if (updatedAgentData) {
+          const updatedAgent = JSON.parse(updatedAgentData)
+          // Merge the updated agent data back into our agent object
+          agent.system_notes = updatedAgent.system_notes || agent.system_notes
+          agent.system_thoughts = updatedAgent.system_thoughts || agent.system_thoughts
+          agent.turn_prompt_enhancement = updatedAgent.turn_prompt_enhancement || agent.turn_prompt_enhancement
+          agent.previous_day_summary = updatedAgent.previous_day_summary || agent.previous_day_summary
+          agent.tool_call_results = updatedAgent.tool_call_results || agent.tool_call_results
+          console.log(`🔄 Agent data reloaded: ${updatedAgent.tool_call_results?.length || 0} tool results`)
+        }
+      } catch (reloadError) {
+        console.error(`⚠️ Failed to reload agent data:`, reloadError)
+        // Continue without reloading - tool execution still happened
+      }
     } else {
       console.warn(`⚠️ No valid tool calls to execute`)
     }
