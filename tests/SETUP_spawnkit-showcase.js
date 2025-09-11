@@ -154,7 +154,7 @@ async function createAgent(agentDef) {
     agentId: agentDef.agentId,
     name: agentDef.name,
     description: agentDef.description,
-    system_permanent_memory: agentDef.permanentMemory
+    pmem: agentDef.permanentMemory  // Fixed: API expects 'pmem' not 'system_permanent_memory'
   });
 
   if (response.status === 200 || response.status === 201) {
