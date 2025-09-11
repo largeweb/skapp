@@ -25,9 +25,9 @@ const environments = {
 };
 
 const BASE_URL = environments[envFlag];
-// Enhanced timing for complete flow validation
+// Enhanced timing for complete flow validation  
 const TURN_WAIT = envFlag === 'local' ? 60000 : 120000; // 60s local, 120s preview/prod
-const KV_WAIT = envFlag === 'local' ? 15000 : 45000; // 15s local, 45s preview/prod
+const KV_WAIT = envFlag === 'local' ? 15000 : 60000; // 15s local, 60s preview/prod (increased for Cloudflare KV)
 
 // Parametrized agent ID
 const testAgentId = agentIdFlag || `validation-test-${Date.now()}`;
